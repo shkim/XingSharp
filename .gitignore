@@ -1,0 +1,11 @@
+.vs
+bin
+obj
+ipch
+Debug
+Release
+app.aps
+*.user
+*.VC.db
+*.VC.opendb
+xingidpw.txt
