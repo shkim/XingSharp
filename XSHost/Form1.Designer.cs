@@ -38,14 +38,15 @@
             this.tbLogs.Multiline = true;
             this.tbLogs.Name = "tbLogs";
             this.tbLogs.ReadOnly = true;
-            this.tbLogs.Size = new System.Drawing.Size(284, 261);
+            this.tbLogs.ScrollBars = System.Windows.Forms.ScrollBars.Vertical;
+            this.tbLogs.Size = new System.Drawing.Size(770, 314);
             this.tbLogs.TabIndex = 0;
             // 
             // Form1
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(7F, 12F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
-            this.ClientSize = new System.Drawing.Size(284, 261);
+            this.ClientSize = new System.Drawing.Size(770, 314);
             this.Controls.Add(this.tbLogs);
             this.Name = "Form1";
             this.Text = "XingSharp Test";

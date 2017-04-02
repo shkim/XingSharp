@@ -90,6 +90,31 @@ bool XingApi::Login(String^ userId, String^ userPw, String^ certPw)
 	return ret;
 }
 
+void XingApi::SetQueryRowCount(int cnt)
+{
+	m_pApiWrapper->SetQueryRowCount(cnt);
+}
+
+bool XingApi::Request_T2101(String^ shcode)
+{
+	CHAR* pszShCode = (CHAR*)Marshal::StringToHGlobalAnsi(shcode).ToPointer();
+	bool ret = m_pApiWrapper->Request_T2101(pszShCode);
+	Marshal::FreeHGlobal(IntPtr(pszShCode));
+
+	return ret;
+}
+
+bool XingApi::Request_ChartIndex(String^ shcode, String^ endDate, ChartMarketType marketType, ChartIndexType indexType, ChartPeriod period)
+{
+	CHAR* pszShCode = (CHAR*)Marshal::StringToHGlobalAnsi(shcode).ToPointer();
+	CHAR* pszEndDate = (CHAR*)Marshal::StringToHGlobalAnsi(endDate).ToPointer();
+	bool ret = m_pApiWrapper->Request_ChartIndex(pszShCode, pszEndDate, marketType, indexType, period);
+	Marshal::FreeHGlobal(IntPtr(pszEndDate));
+	Marshal::FreeHGlobal(IntPtr(pszShCode));
+
+	return ret;
+}
+
 void XingApi::OnConnect(bool success, LPCTSTR pszMsg)
 {
 	m_pListener->Xing_Connect(success, gcnew String(pszMsg));

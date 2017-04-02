@@ -71,7 +71,7 @@ namespace XSHost
                     userPw = tok[1].Trim();
                     certPw = tok[2].Trim();
                 }
-                catch(Exception)
+                catch (Exception)
                 {
                     userId = "userid";
                     userPw = "passwd";
@@ -93,6 +93,8 @@ namespace XSHost
             if (success)
             {
                 LogPrint("로그인에 성공하였습니다.");
+                //m_xingApi.Request_T2101("101M6000");
+                m_xingApi.Request_ChartIndex("101M6000", "20170330", ChartMarketType.FutureOption, ChartIndexType.MACD, ChartPeriod.Daily);
             }
             else
             {
@@ -100,5 +102,21 @@ namespace XSHost
             }
         }
 
+        public void Xing_T2101(Xt2101 data)
+        {
+            LogPrint("REQUEST_DATA: {0}, 현재가={1}, 전일대비={2}, 만기일={3}, 남은날={4}", data.HangulName, data.Price, data.Sign, data.LastMonth, data.JanDateCnt);
+            LogPrint("  전일종가={0}, 상한가={1}, 하한가={2}, 기준가={3}, KOSPI200지수={4}", data.JnilClose, data.UpLmtPrice, data.DnLmtPrice, data.RecPrice, data.KospiJisu);
+
+        }
+
+        public void Xing_ChartIndex(XChartIndex chart)
+        {
+            LogPrint("ChartIndex({0}): Rows={1}, MoreColumns={2}: {3}", chart.Type, chart.Items.Length, chart.ValueNames.Length, String.Join(",", chart.ValueNames));
+            foreach (XChartIndexItem item in chart.Items)
+            {
+                LogPrint("{0},{1}: O={2},H={3},L={4},C={5},V={6} | {7}", item.Day, item.Time, item.Open, item.High, item.Low, item.Close, item.Volume, String.Join(",", item.IndexValues));
+            }
+
+        }
     }
 }

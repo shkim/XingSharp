@@ -74,12 +74,10 @@ std::string KRtoAnsi(const char* pKrStr, int len)
 	return ret;
 }
 
-double ParseFloat(const char* pData, int nDataLen, int nDotPos)
+static void _MakeDotNumberString(char *pBuff, const char* pData, int nDataLen, int nDotPos)
 {
-	char buff[32];
 	ASSERT(nDataLen < 32 && nDotPos < nDataLen);
 
-	char* pBuff = buff;
 	int nPreDotLen = nDataLen - nDotPos;
 	int i = 0;
 	for (; i < nPreDotLen; i++)
@@ -93,8 +91,30 @@ double ParseFloat(const char* pData, int nDataLen, int nDotPos)
 		*pBuff++ = pData[i];;
 	}
 	*pBuff++ = 0;
+}
 
+double ParseFloat(const char* pData, int nDataLen, int nDotPos)
+{
+	char buff[32];
+	_MakeDotNumberString(buff, pData, nDataLen, nDotPos);
 	return atof(buff);
+}
+
+System::String^ GetFloatString(const char* pData, int nDataLen, int nDotPos)
+{
+	char buff[32];
+	_MakeDotNumberString(buff, pData, nDataLen, nDotPos);
+
+	char* pStart = buff;
+	while (*pStart == '0')
+	{
+		if (pStart[1] == '.' || pStart[1] == 0)
+			break;
+
+		pStart++;
+	}
+
+	return gcnew System::String(pStart);
 }
 
 int ParseInteger(const char* pData, int nDataLen)
@@ -106,4 +126,15 @@ int ParseInteger(const char* pData, int nDataLen)
 	buff[nDataLen] = 0;
 
 	return atoi(buff);
+}
+
+void CopyStringAndFillSpace(char* pDest, int lenDest, const char* pszSource)
+{
+	int lenSrc = strlen(pszSource);
+	int nCopy = (lenDest < lenSrc) ? lenDest : lenSrc;
+	memcpy(pDest, pszSource, nCopy);
+	for (int n = nCopy; nCopy < lenDest; n++)
+	{
+		pDest[n] = ' ';
+	}
 }

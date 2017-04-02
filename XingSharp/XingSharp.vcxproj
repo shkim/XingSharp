@@ -133,8 +133,11 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="apiwrap.h" />
+    <ClInclude Include="IXingAPI.h" />
     <ClInclude Include="resource.h" />
     <ClInclude Include="Stdafx.h" />
+    <ClInclude Include="tr\ChartIndex.h" />
+    <ClInclude Include="tr\t2101.h" />
     <ClInclude Include="util.h" />
     <ClInclude Include="XingSharp.h" />
   </ItemGroup>

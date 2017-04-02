@@ -11,5 +11,5 @@
 #include "dbgtrace.h"
 
 #include <string>
-//#include <map>
+#include <map>
 //#include <vector>

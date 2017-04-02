@@ -146,6 +146,7 @@ public:
 	inline	int		GetTRCountPerSec		( LPCTSTR pszCode );				// N초당 전송 가능 횟수 : N초내 가능 횟수
 	inline	int		GetTRCountBaseSec		( LPCTSTR pszCode );				// N초당 전송 가능 횟수 : N초
 	inline	int		GetTRCountRequest		( LPCTSTR pszCode );				// TR 호출 횟수
+	inline	int		GetTRCountLimit			( LPCTSTR pszCode );				// 10분당 전송 가능 횟수
 
 	inline	void	SetNotifyFlag			( BOOL bNotifyFlag );	// 긴급메시지, 서버접속 단절통지 등의 통보 설정 (지원 예정)
 
@@ -398,6 +399,7 @@ protected:
 	typedef int		(__stdcall *FP_GETTRCOUNTPERSEC			) ( LPCTSTR );
 	typedef int		(__stdcall *FP_GETTRCOUNTBASESEC		) ( LPCTSTR );
 	typedef int		(__stdcall *FP_GETTRCOUNTREQUEST		) ( LPCTSTR );
+	typedef int		(__stdcall *FP_GETTRCOUNTLIMIT			) ( LPCTSTR );
 
 	typedef void	(__stdcall *FP_SETNOTIFYFLAG			) ( BOOL );
 
@@ -450,6 +452,7 @@ protected:
 	FP_GETTRCOUNTPERSEC			m_fpGetTRCountPerSec;
 	FP_GETTRCOUNTBASESEC		m_fpGetTRCountBaseSec;
 	FP_GETTRCOUNTREQUEST		m_fpGetTRCountRequest;
+	FP_GETTRCOUNTLIMIT			m_fpGetTRCountLimit;
 
 	FP_SETNOTIFYFLAG			m_fpSetNotifyFlag;
 
@@ -536,7 +539,6 @@ BOOL IXingAPI::Login( HWND hWnd, LPCSTR pszID, LPCSTR pszPwd, LPCSTR pszCertPwd,
 	if( NULL == m_fpLogin )	m_fpLogin = (FP_LOGIN)GetProcAddress(m_hModule, "ETK_Login");
 	ASSERT( m_fpLogin );
 	if( NULL == m_fpLogin )	return FALSE;
-	
 	return m_fpLogin( hWnd, pszID, pszPwd, pszCertPwd, nType, bShowCertErrDlg );
 }
 
@@ -882,6 +884,18 @@ int IXingAPI::GetTRCountRequest( LPCTSTR pszCode )
 	if( NULL == m_fpGetTRCountRequest )	return -1;
 	
 	return m_fpGetTRCountRequest( pszCode );
+}
+
+int IXingAPI::GetTRCountLimit( LPCTSTR pszCode )
+{
+	if( NULL == m_hModule )	return -1;
+	
+	if( NULL == m_fpGetTRCountLimit )	
+		m_fpGetTRCountLimit = (FP_GETTRCOUNTLIMIT)GetProcAddress( m_hModule, "ETK_GetTRCountLimit" );
+	
+	if( NULL == m_fpGetTRCountLimit )	return -1;
+	
+	return m_fpGetTRCountLimit( pszCode );
 }
 
 void IXingAPI::SetNotifyFlag( BOOL bNotifyFlag )

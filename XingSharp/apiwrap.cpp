@@ -11,7 +11,7 @@
 
 namespace XingSharp {
 
-static IXingAPI s_xingApi;
+IXingAPI s_xingApi;
 
 LPCTSTR ApiWrapper::szClassName = _T("XingCBW");
 static HINSTANCE g_hInstance;
@@ -20,6 +20,7 @@ ApiWrapper::ApiWrapper(XingApi^ pOwner)
 {
 	m_hWnd = NULL;
 	m_pOwner = pOwner;
+	m_nChartQueryRows = 100;
 }
 
 void ApiWrapper::Destroy()
@@ -31,6 +32,8 @@ void ApiWrapper::Destroy()
 			s_xingApi.Disconnect();
 		}
 		
+		s_xingApi.Uninit();
+
 		DestroyWindow(m_hWnd);
 		m_hWnd = NULL;
 
@@ -125,6 +128,28 @@ bool ApiWrapper::Login(LPCSTR pszUserId, LPCSTR pszUserPw, LPCSTR pszCertPw)
 	return true;
 }
 
+RequestInfo* ApiWrapper::RegisterRequestInfo(int nReqId, int nReqType)
+{
+	if (nReqId < 0)
+	{
+		TRACE("Request (Type=%d) failed (ID is -1)", nReqType);
+		return NULL;
+	}
+
+	if (m_mapReqId2Info.find(nReqId) != m_mapReqId2Info.end())
+	{
+		TRACE("FATAL: ReqID %d duplicated.", nReqId);
+	}
+
+	RequestInfo* pRI = new RequestInfo();
+	memset(pRI, 0, sizeof(RequestInfo));
+	pRI->nReqType = nReqType;
+
+	m_mapReqId2Info[nReqId] = pRI;
+	TRACE("Request %d registered with type %d", nReqId, nReqType);
+	return pRI;
+}
+
 void ApiWrapper::HandleMessage(UINT xmMessage, WPARAM wParam, LPARAM lParam)
 {
 	switch (xmMessage)
@@ -143,7 +168,7 @@ void ApiWrapper::HandleMessage(UINT xmMessage, WPARAM wParam, LPARAM lParam)
 		break;
 
 	case XM_RECEIVE_DATA:
-		//OnReceiveData(wParam, lParam);
+		OnReceiveData(wParam, lParam);
 		break;
 
 	default:

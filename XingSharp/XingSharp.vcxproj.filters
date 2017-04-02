@@ -13,6 +13,9 @@
       <UniqueIdentifier>{67DA6AB6-F800-4c08-8B7A-83BB121AAD01}</UniqueIdentifier>
       <Extensions>rc;ico;cur;bmp;dlg;rc2;rct;bin;rgs;gif;jpg;jpeg;jpe;resx;tiff;tif;png;wav;mfcribbon-ms</Extensions>
     </Filter>
+    <Filter Include="TR">
+      <UniqueIdentifier>{0fd82a1d-a7d0-484e-987d-00d4f988cdde}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="XingSharp.h">
@@ -29,6 +32,15 @@
     </ClInclude>
     <ClInclude Include="apiwrap.h">
       <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="IXingAPI.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="tr\ChartIndex.h">
+      <Filter>TR</Filter>
+    </ClInclude>
+    <ClInclude Include="tr\t2101.h">
+      <Filter>TR</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
