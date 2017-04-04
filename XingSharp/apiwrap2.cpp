@@ -50,11 +50,32 @@ bool ApiWrapper::Request_ChartIndex(const char* shcode, const char* day8code, Ch
 	case ChartIndexType::PriceMoveAverage:
 		StringCchCopyA(inblock.indexname, 40, W2K(L"가격 이동평균"));
 		break;
+	case ChartIndexType::EstrangementRatio:
+		StringCchCopyA(inblock.indexname, 40, W2K(L"이격도"));
+		break;
+	case ChartIndexType::AverageTrueRange:
+		StringCchCopyA(inblock.indexname, 40, W2K(L"Average True Range"));
+		break;
 	case ChartIndexType::MACD:
 		StringCchCopyA(inblock.indexname, 40, W2K(L"MACD"));
 		break;
 	case ChartIndexType::RSI:
 		StringCchCopyA(inblock.indexname, 40, W2K(L"RSI"));
+		break;
+	case ChartIndexType::OBV:
+		StringCchCopyA(inblock.indexname, 40, W2K(L"OBV"));
+		break;
+	case ChartIndexType::Momentum:
+		StringCchCopyA(inblock.indexname, 40, W2K(L"Momentum"));
+		break;
+	case ChartIndexType::SonarMomentum:
+		StringCchCopyA(inblock.indexname, 40, W2K(L"Sonar Momentum"));
+		break;
+	case ChartIndexType::PriceROC:
+		StringCchCopyA(inblock.indexname, 40, W2K(L"Price ROC"));
+		break;
+	case ChartIndexType::VolumeROC:
+		StringCchCopyA(inblock.indexname, 40, W2K(L"Volume ROC"));
 		break;
 
 	default:
@@ -231,6 +252,29 @@ void ApiWrapper::Process_ChartIndex(RequestInfo* pRI, _RECV_PACKET* pPacket)
 			hasError = true;
 		}
 	}
+	else if (pRI->indexType == ChartIndexType::EstrangementRatio)
+	{
+		// 이격도
+		if (nMoreValueCount != 4
+		|| KRtoWide(pWrap->outBlock1[0].value1, sizeof(pWrap->outBlock1[0].value1)).compare(0, 5, L"이격도 종")	// "이격도 종?"
+		|| KRtoWide(pWrap->outBlock1[0].value2, sizeof(pWrap->outBlock1[0].value2)).compare(L"10")
+		|| KRtoWide(pWrap->outBlock1[0].value3, sizeof(pWrap->outBlock1[0].value3)).compare(L"20")
+		|| KRtoWide(pWrap->outBlock1[0].value4, sizeof(pWrap->outBlock1[0].value4)).compare(L"60"))
+		{
+			TRACE(L"ChartIndex 이격도 필드명 변경이 감지되었습니다.\n");
+			hasError = true;
+		}
+	}
+	else if (pRI->indexType == ChartIndexType::AverageTrueRange)
+	{
+		// ATR
+		if (nMoreValueCount != 1
+		|| KRtoWide(pWrap->outBlock1[0].value1, sizeof(pWrap->outBlock1[0].value1)).compare(L"ATR 14"))
+		{
+			TRACE(L"ChartIndex Average True Range 필드명 변경이 감지되었습니다.\n");
+			hasError = true;
+		}
+	}
 	else if (pRI->indexType == ChartIndexType::MACD)
 	{
 		// MACD
@@ -254,6 +298,61 @@ void ApiWrapper::Process_ChartIndex(RequestInfo* pRI, _RECV_PACKET* pPacket)
 			hasError = true;
 		}
 	}
+	else if (pRI->indexType == ChartIndexType::OBV)
+	{
+		// OBV
+		if (nMoreValueCount != 2
+		|| KRtoWide(pWrap->outBlock1[0].value1, sizeof(pWrap->outBlock1[0].value1)).compare(L"OBV종가")
+		|| KRtoWide(pWrap->outBlock1[0].value2, sizeof(pWrap->outBlock1[0].value2)).compare(L"시그널 9"))
+		{
+			TRACE(L"ChartIndex OBV 필드명 변경이 감지되었습니다.\n");
+			hasError = true;
+		}
+	}
+	else if (pRI->indexType == ChartIndexType::Momentum)
+	{
+		// Momentum
+		if (nMoreValueCount != 2
+		|| KRtoWide(pWrap->outBlock1[0].value1, sizeof(pWrap->outBlock1[0].value1)).compare(0, 9, L"Momentum ")
+		|| KRtoWide(pWrap->outBlock1[0].value2, sizeof(pWrap->outBlock1[0].value2)).compare(L"시그널 9"))
+		{
+			TRACE(L"ChartIndex Momentum 필드명 변경이 감지되었습니다.\n");
+			hasError = true;
+		}
+	}
+	else if (pRI->indexType == ChartIndexType::SonarMomentum)
+	{
+		// Momentum
+		if (nMoreValueCount != 2
+		|| KRtoWide(pWrap->outBlock1[0].value1, sizeof(pWrap->outBlock1[0].value1)).compare(L"Sonar 종가")
+		|| KRtoWide(pWrap->outBlock1[0].value2, sizeof(pWrap->outBlock1[0].value2)).compare(0, 5, L"시그널 단"))
+		{
+			TRACE(L"ChartIndex Sonar Momentum 필드명 변경이 감지되었습니다.\n");
+			hasError = true;
+		}
+	}
+	else if (pRI->indexType == ChartIndexType::PriceROC)
+	{
+		// Price ROC
+		if (nMoreValueCount != 2
+		|| KRtoWide(pWrap->outBlock1[0].value1, sizeof(pWrap->outBlock1[0].value1)).compare(L"ROC 종가 1")
+		|| KRtoWide(pWrap->outBlock1[0].value2, sizeof(pWrap->outBlock1[0].value2)).compare(L"시그널 9"))
+		{
+			TRACE(L"ChartIndex Price ROC 필드명 변경이 감지되었습니다.\n");
+			hasError = true;
+		}
+	}
+	else if (pRI->indexType == ChartIndexType::VolumeROC)
+	{
+		// Price ROC
+		if (nMoreValueCount != 2
+		|| KRtoWide(pWrap->outBlock1[0].value1, sizeof(pWrap->outBlock1[0].value1)).compare(L"VolumeROC")
+		|| KRtoWide(pWrap->outBlock1[0].value2, sizeof(pWrap->outBlock1[0].value2)).compare(L"시그널 9"))
+		{
+			TRACE(L"ChartIndex Volume ROC 필드명 변경이 감지되었습니다.\n");
+			hasError = true;
+		}
+	}
 	else
 	{
 		TRACE(L"Unknown ChartIndex index type: %d\n", (int)pRI->indexType);
@@ -263,6 +362,10 @@ void ApiWrapper::Process_ChartIndex(RequestInfo* pRI, _RECV_PACKET* pPacket)
 	XChartIndex^ chart = gcnew XChartIndex();
 	chart->Type = pRI->indexType;
 	chart->HasError = hasError;
+#ifdef _DEBUG
+	if (chart->HasError)
+		TRACE("!hasError!");
+#endif
 
 	chart->ValueNames = gcnew array<String^>(nMoreValueCount);
 	chart->ValueNames[0] = gcnew String(KRtoWide(pWrap->outBlock1[0].value1, sizeof(pWrap->outBlock1[0].value1)).c_str());
@@ -311,7 +414,7 @@ void ApiWrapper::Process_ChartIndex(RequestInfo* pRI, _RECV_PACKET* pPacket)
 		if (nMoreValueCount > 4)
 			item->IndexValues[4] = gcnew String(KRtoWide(pWrap->outBlock1[i].value5, sizeof(pWrap->outBlock1[i].value5)).c_str());
 
-		/*TRACE(L"IndexValues: %s,%s,%s,%s,%s\n",
+		/*TRACE(L"IndexValues: %s* %s* %s* %s* %s\n",
 			KRtoWide(pWrap->outBlock1[i].value1, sizeof(pWrap->outBlock1[i].value1)).c_str(),
 			KRtoWide(pWrap->outBlock1[i].value2, sizeof(pWrap->outBlock1[i].value2)).c_str(),
 			KRtoWide(pWrap->outBlock1[i].value3, sizeof(pWrap->outBlock1[i].value3)).c_str(),

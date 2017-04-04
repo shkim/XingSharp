@@ -32,22 +32,41 @@ LPSTR W2K(LPCWSTR pszSrc)
 	return buff;
 }
 
-std::wstring KRtoWide(const char* pKrStr, int len)
+std::wstring KRtoWide(const char* pKrStr, int klen)
 {
+	int lenO = klen;
+
 	// Trim Right
-	while (len > 0)
+	while (klen > 0)
 	{
-		int ch = pKrStr[len - 1];
+		int ch = pKrStr[klen - 1];
 		if (ch == ' ' || ch == 0)
-			--len;
+			--klen;
 		else
 			break;
 	}
 
-	int nReq = MultiByteToWideChar(CP_949, 0, pKrStr, len, NULL, 0);
+	// trash characters between '\0' and len
+	for (int i = 0; i < klen; i++)
+	{
+		if (pKrStr[i] == '\0')
+		{
+			klen = i;
+			break;
+		}
+	}
+
+	if (klen == 0)
+	{
+		return L"";
+	}
+
+	//TRACE("KRtoWide(%d -> %d)\n", lenO, klen);
+
+	int nReq = MultiByteToWideChar(CP_949, 0, pKrStr, klen, NULL, 0);
 	int cbAlloc = ++nReq * sizeof(WCHAR);
 	WCHAR* pBuff = (WCHAR*)_malloca(cbAlloc);
-	int wlen = MultiByteToWideChar(CP_949, 0, pKrStr, len, pBuff, nReq);
+	int wlen = MultiByteToWideChar(CP_949, 0, pKrStr, klen, pBuff, nReq);
 	ASSERT(wlen >= 0);
 	std::wstring ret(pBuff, &pBuff[wlen]);
 	_freea(pBuff);

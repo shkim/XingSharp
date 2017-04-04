@@ -146,7 +146,7 @@ RequestInfo* ApiWrapper::RegisterRequestInfo(int nReqId, int nReqType)
 	pRI->nReqType = nReqType;
 
 	m_mapReqId2Info[nReqId] = pRI;
-	TRACE("Request %d registered with type %d", nReqId, nReqType);
+	TRACE("Request %d registered with type %d\n", nReqId, nReqType);
 	return pRI;
 }
 

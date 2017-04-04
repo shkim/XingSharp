@@ -26,8 +26,15 @@ namespace XingSharp
 	public enum class ChartIndexType : char
 	{
 		PriceMoveAverage,		// 가격이동평균
+		EstrangementRatio,		// 이격도
+		AverageTrueRange,
 		MACD,
 		RSI,
+		OBV,
+		Momentum,
+		SonarMomentum,
+		PriceROC,
+		VolumeROC
 	};
 
 	public enum class SignAgainstYesterday : char

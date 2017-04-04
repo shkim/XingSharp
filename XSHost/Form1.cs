@@ -94,7 +94,8 @@ namespace XSHost
             {
                 LogPrint("로그인에 성공하였습니다.");
                 //m_xingApi.Request_T2101("101M6000");
-                m_xingApi.Request_ChartIndex("101M6000", "20170330", ChartMarketType.FutureOption, ChartIndexType.MACD, ChartPeriod.Daily);
+                m_xingApi.SetQueryRowCount(30);
+                m_xingApi.Request_ChartIndex("101M6000", "20170404", ChartMarketType.FutureOption, ChartIndexType.PriceMoveAverage, ChartPeriod.Daily);
             }
             else
             {
@@ -111,10 +112,10 @@ namespace XSHost
 
         public void Xing_ChartIndex(XChartIndex chart)
         {
-            LogPrint("ChartIndex({0}): Rows={1}, MoreColumns={2}: {3}", chart.Type, chart.Items.Length, chart.ValueNames.Length, String.Join(",", chart.ValueNames));
+            LogPrint("ChartIndex({0}): Rows={1}, MoreColumns={2}: {3}", chart.Type, chart.Items.Length, chart.ValueNames.Length, String.Join(", ", chart.ValueNames));
             foreach (XChartIndexItem item in chart.Items)
             {
-                LogPrint("{0},{1}: O={2},H={3},L={4},C={5},V={6} | {7}", item.Day, item.Time, item.Open, item.High, item.Low, item.Close, item.Volume, String.Join(",", item.IndexValues));
+                LogPrint("{0},{1}: O={2},H={3},L={4},C={5},V={6} | {7}", item.Day, item.Time, item.Open, item.High, item.Low, item.Close, item.Volume, String.Join(", ", item.IndexValues));
             }
 
         }
