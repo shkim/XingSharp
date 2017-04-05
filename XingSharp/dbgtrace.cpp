@@ -5,8 +5,6 @@
 #include <iostream>
 #include <fstream>
 
-#ifdef _DEBUG
-
 void CLR_OutputDebugStringW(const WCHAR* pszMsgW)
 {
 	System::Diagnostics::Debug::Write(gcnew System::String(pszMsgW));
@@ -18,6 +16,22 @@ void CLR_OutputDebugStringA(const CHAR* pszMsgA)
 }
 
 #pragma unmanaged
+
+void OutputDebugPrint(LPCWSTR szFormat, ...)
+{
+	WCHAR szBuffer[1024];
+
+	va_list ap;
+	va_start(ap, szFormat);
+
+	StringCbVPrintfW(szBuffer, sizeof(szBuffer), szFormat, ap);
+
+	va_end(ap);
+
+	CLR_OutputDebugStringW(szBuffer);
+}
+
+#ifdef _DEBUG
 
 void _TRACE(LPCWSTR szFormat, ...)
 {
@@ -63,17 +77,3 @@ TCHAR* GetLastErrorMsg()
 }
 
 #endif
-
-void OutputDebugPrint(LPCWSTR szFormat, ...)
-{
-	WCHAR szBuffer[1024];
-
-	va_list ap;
-	va_start(ap, szFormat);
-	
-	StringCbVPrintfW(szBuffer, sizeof(szBuffer), szFormat, ap);
-
-	va_end(ap);
-
-	CLR_OutputDebugStringW(szBuffer);
-}
