@@ -4,6 +4,9 @@
 #include "util.h"
 #include "XingSharp.h"
 #include "IXingAPI.h"
+#include "tr/FC0.h"
+#include "tr/t1601.h"
+#include "tr/t1633.h"
 #include "tr/t2101.h"
 #include "tr/ChartIndex.h"
 
@@ -34,56 +37,57 @@ bool ApiWrapper::Request_T2101(const char* shcode)
 	memset(&inBlock, ' ', sizeof(inBlock));
 	CopyStringAndFillSpace(inBlock.focode, sizeof(inBlock.focode), shcode);
 
-	int nReqId = s_xingApi.Request(m_hWnd, (LPCTSTR)"t2101",
+	int nReqId = s_xingApi.Request(m_hWnd, (LPCTSTR)NAME_t2101,
 		&inBlock, sizeof(inBlock));
 
 	return (NULL != RegisterRequestInfo(nReqId, REQTYPE_T2101));
 }
 
-bool ApiWrapper::Request_ChartIndex(const char* shcode, const char* day8code, ChartMarketType marketType, ChartIndexType indexType, ChartPeriod period)
+bool ApiWrapper::Request_T1601(bool forMoney)
+{
+	t1601InBlock inBlock;
+	memset(&inBlock, ' ', sizeof(inBlock));
+
+	char ch = forMoney ? '2' : '1';	// 금액(2) : 수량(1)
+	inBlock.gubun1[0] = ch;
+	inBlock.gubun2[0] = ch;
+	inBlock.gubun3[0] = '1';	// 1:백만원, 2:억원
+	inBlock.gubun4[0] = ch;
+
+	int nReqId = s_xingApi.Request(m_hWnd, (LPCTSTR)NAME_t1601,
+		&inBlock, sizeof(inBlock));
+
+	return (NULL != RegisterRequestInfo(nReqId, REQTYPE_T1601));
+}
+
+bool ApiWrapper::Request_T1633(bool forKospi, bool forMoney, const char* pszFromDate, const char* pszToDate)
+{
+	t1633InBlock inBlock;
+	memset(&inBlock, ' ', sizeof(inBlock));
+
+	inBlock.gubun[0] = forKospi ? '0' : '1';
+	inBlock.gubun1[0] = forMoney ? '0' : '1';
+	inBlock.gubun2[0] = '0'; // 0:수치, 1:누적
+	inBlock.gubun3[0] = '1'; // 1:일, 2:주, 3:월
+	inBlock.gubun4[0] = '0'; // 0:default, 1:직전대비증감
+
+	CopyStringAndFillSpace(inBlock.fdate, sizeof(inBlock.fdate), pszFromDate);
+	CopyStringAndFillSpace(inBlock.tdate, sizeof(inBlock.tdate), pszToDate);
+
+	// TODO: 연속조회셋팅
+	TRACE("t1633: %s~%s\n", pszFromDate, pszToDate);
+	int nReqId = s_xingApi.Request(m_hWnd, (LPCTSTR)NAME_t1633,
+		&inBlock, sizeof(inBlock));
+
+	return (NULL != RegisterRequestInfo(nReqId, REQTYPE_T1633));
+}
+
+bool ApiWrapper::Request_ChartIndex(const char* shcode, const char* day8code, const char* indexName, XChartIndexParam^ otherParam)
 {
 	ChartIndexInBlock inblock;
 	memset(&inblock, ' ', sizeof(ChartIndexInBlock));
 
-	switch (indexType)
-	{
-	case ChartIndexType::PriceMoveAverage:
-		StringCchCopyA(inblock.indexname, 40, W2K(L"가격 이동평균"));
-		break;
-	case ChartIndexType::EstrangementRatio:
-		StringCchCopyA(inblock.indexname, 40, W2K(L"이격도"));
-		break;
-	case ChartIndexType::AverageTrueRange:
-		StringCchCopyA(inblock.indexname, 40, W2K(L"Average True Range"));
-		break;
-	case ChartIndexType::MACD:
-		StringCchCopyA(inblock.indexname, 40, W2K(L"MACD"));
-		break;
-	case ChartIndexType::RSI:
-		StringCchCopyA(inblock.indexname, 40, W2K(L"RSI"));
-		break;
-	case ChartIndexType::OBV:
-		StringCchCopyA(inblock.indexname, 40, W2K(L"OBV"));
-		break;
-	case ChartIndexType::Momentum:
-		StringCchCopyA(inblock.indexname, 40, W2K(L"Momentum"));
-		break;
-	case ChartIndexType::SonarMomentum:
-		StringCchCopyA(inblock.indexname, 40, W2K(L"Sonar Momentum"));
-		break;
-	case ChartIndexType::PriceROC:
-		StringCchCopyA(inblock.indexname, 40, W2K(L"Price ROC"));
-		break;
-	case ChartIndexType::VolumeROC:
-		StringCchCopyA(inblock.indexname, 40, W2K(L"Volume ROC"));
-		break;
-
-	default:
-		TRACE("Invalid chart index type: %d\n", (int)indexType);
-		return false;
-	}
-
-	switch (marketType)
+	switch (otherParam->Market)
 	{
 	case ChartMarketType::Stock:
 		inblock.market[0] = '1';
@@ -96,30 +100,33 @@ bool ApiWrapper::Request_ChartIndex(const char* shcode, const char* day8code, Ch
 		break;
 
 	default:
-		TRACE("Invalid chart market type: %d\n", (int)marketType);
+		TRACE("Invalid chart market type: %d\n", (int)otherParam->Market);
 		return false;
 	}
 
-	switch (period)
+	switch (otherParam->Period)
 	{
-	case ChartPeriod::Tick:
+	case ChartPeriodType::Tick:
 		inblock.period[0] = '0';
 		break;
-	case ChartPeriod::Minute:
+	case ChartPeriodType::Minute:
 		inblock.period[0] = '1';
 		break;
-	case ChartPeriod::Daily:
+	case ChartPeriodType::Daily:
 		inblock.period[0] = '2';
 		break;
-	case ChartPeriod::Weekly:
+	case ChartPeriodType::Weekly:
 		inblock.period[0] = '3';
 		break;
-	case ChartPeriod::Monthly:
+	case ChartPeriodType::Monthly:
 		inblock.period[0] = '4';
+		break;
+	case ChartPeriodType::Yearly:
+		inblock.period[0] = '5';
 		break;
 
 	default:
-		TRACE("Invalid chart period type: %d\n", (int)period);
+		TRACE("Invalid chart period type: %d\n", (int)otherParam->Period);
 		return false;
 	}
 
@@ -129,22 +136,27 @@ bool ApiWrapper::Request_ChartIndex(const char* shcode, const char* day8code, Ch
 		return false;
 	}
 
+	StringCbCopyA(inblock.indexname, sizeof(inblock.indexname), indexName);
+
 	CopyStringAndFillSpace(inblock.shcode, sizeof(inblock.shcode), shcode);
 	CopyStringAndFillSpace(inblock.edate, sizeof(inblock.edate), day8code); // 종료일자(일/주/월 period 해당)
 
-	StringCchPrintfA(inblock.qrycnt, 4, "%d", m_nChartQueryRows); // 요청건수(최대 500개)
-	StringCchPrintfA(inblock.ncnt, 4, "%d", 1);
+	int queryCount = otherParam->QueryCount > 0 ? otherParam->QueryCount : m_nChartQueryRows;
+	StringCchPrintfA(inblock.qrycnt, 4, "%d", queryCount); // 요청건수(최대 500개)
+
+	int numForPeriod = otherParam->TicksOrMinutes > 0 ? otherParam->TicksOrMinutes : 1;
+	StringCchPrintfA(inblock.ncnt, 4, "%d", numForPeriod);
 	
-	inblock.Isamend[0] = '1'; // 수정주가 반영
-	inblock.Isgab[0] = '1'; // 갭 보정
-	inblock.IsReal[0] = '0'; // 실시간 데이터 자동 등록 여부 (0:조회만, 1:실시간 자동 등록)
+	inblock.Isamend[0] = otherParam->AmendPrice ? '1':'0'; // 수정주가 반영
+	inblock.Isgab[0] = otherParam->FixGap ? '1':'0'; // 갭 보정
+	inblock.IsReal[0] = otherParam->RegisterReal ? '1':'0'; // 실시간 데이터 자동 등록 여부 (0:조회만, 1:실시간 자동 등록)
 
 	int nReqId = s_xingApi.RequestService(m_hWnd, (LPCTSTR)NAME_ChartIndex, (LPCTSTR)&inblock);
 	RequestInfo* pRI = RegisterRequestInfo(nReqId, REQTYPE_CHARTINDEX);
 	if (pRI)
 	{
-		pRI->indexType = indexType;
-		pRI->period = period;
+		pRI->nUserKey = otherParam->UserKey;
+		pRI->nUserParam = otherParam->UserParam;
 		return true;
 	}
 
@@ -186,6 +198,213 @@ SignAgainstYesterday ParseSignAgainstYesterday(char ch)
 		return SignAgainstYesterday::InvalidValue;
 	}
 }
+
+// KOSPI200 선물 체결
+void ApiWrapper::Process_FC0(FC0_OutBlock* pOutBlock)
+{
+//	m_ctrlOutBlock.SetItemText(nRow++, 1, GetDispData(pOutBlock->chetime, sizeof(pOutBlock->chetime), DATA_TYPE_STRING));    // 체결시간          
+//	m_ctrlOutBlock.SetItemText(nRow++, 1, GetDispData(pOutBlock->sign, sizeof(pOutBlock->sign), DATA_TYPE_STRING));    // 전일대비구분      
+																													   // see DlG_FC0.cpp
+
+}
+
+static XTraders^ _InitTradersObj()
+{
+	XTraders^ ret = gcnew XTraders();
+	ret->Individual = gcnew XTradeAmount();
+	ret->Foreigner = gcnew XTradeAmount();
+	ret->Institute = gcnew XTradeAmount();
+	ret->StockFirm = gcnew XTradeAmount();
+	ret->InvestTrust = gcnew XTradeAmount();
+	ret->Bank = gcnew XTradeAmount();
+	ret->Insurance = gcnew XTradeAmount();
+	ret->InvestBank = gcnew XTradeAmount();
+	ret->Fund = gcnew XTradeAmount();
+	ret->Government = gcnew XTradeAmount();
+	ret->PrivateEquity = gcnew XTradeAmount();
+	ret->Etc = gcnew XTradeAmount();
+	return ret;
+}
+
+#define _SetTradeItem(_Market,_Trader,_Num)\
+	m_pT1601Pend->_Market->_Trader->Buy = GetIntString(pOutBlock->ms_##_Num, sizeof(pOutBlock->ms_##_Num));\
+	m_pT1601Pend->_Market->_Trader->Sell = GetIntString(pOutBlock->md_##_Num, sizeof(pOutBlock->md_##_Num));\
+	m_pT1601Pend->_Market->_Trader->Rate = GetIntString(pOutBlock->rate_##_Num, sizeof(pOutBlock->rate_##_Num));\
+	m_pT1601Pend->_Market->_Trader->NetBuy = GetIntString(pOutBlock->svolume_##_Num, sizeof(pOutBlock->svolume_##_Num));
+
+
+// 투자자별 종합
+void ApiWrapper::Process_T1601(RequestInfo* pRI, _RECV_PACKET* pPacket)
+{
+	TRACE("ProcessT1601: BlockName=%s\n", pPacket->szBlockName);
+
+	if (System::Object::ReferenceEquals(m_pT1601Pend, nullptr))
+		m_pT1601Pend = gcnew Xt1601();
+
+	if (strcmp(pPacket->szBlockName, NAME_t1601OutBlock1) == 0)
+	{
+		t1601OutBlock1* pOutBlock = (t1601OutBlock1*)pPacket->lpData;
+
+		/*m_pT1601Pend->Kospi = InitTradersObj();
+		m_pT1601Pend->Kospi->Individual->Buy = GetIntString(pOutBlock->ms_08, sizeof(pOutBlock->ms_08));
+		m_pT1601Pend->Kospi->Individual->Sell = GetIntString(pOutBlock->md_08, sizeof(pOutBlock->md_08));
+		m_pT1601Pend->Kospi->Individual->Rate = GetIntString(pOutBlock->rate_08, sizeof(pOutBlock->rate_08));
+		m_pT1601Pend->Kospi->Individual->NetBuy = GetIntString(pOutBlock->svolume_08, sizeof(pOutBlock->svolume_08));*/
+
+		m_pT1601Pend->Kospi = _InitTradersObj();
+		_SetTradeItem(Kospi, Individual, 08);
+		_SetTradeItem(Kospi, Foreigner, 17);
+		_SetTradeItem(Kospi, Institute, 18);
+		_SetTradeItem(Kospi, StockFirm, 01);
+		_SetTradeItem(Kospi, InvestTrust, 03);
+		_SetTradeItem(Kospi, Bank, 04);
+		_SetTradeItem(Kospi, Insurance, 02);
+		_SetTradeItem(Kospi, InvestBank, 05);
+		_SetTradeItem(Kospi, Fund, 06);
+		_SetTradeItem(Kospi, Government, 11);
+		_SetTradeItem(Kospi, Etc, 07);
+		_SetTradeItem(Kospi, PrivateEquity, 00);
+	}
+	else if (strcmp(pPacket->szBlockName, NAME_t1601OutBlock2) == 0)
+	{
+		t1601OutBlock2* pOutBlock = (t1601OutBlock2*)pPacket->lpData;
+
+		m_pT1601Pend->Kosdaq = _InitTradersObj();
+		_SetTradeItem(Kosdaq, Individual, 08);
+		_SetTradeItem(Kosdaq, Foreigner, 17);
+		_SetTradeItem(Kosdaq, Institute, 18);
+		_SetTradeItem(Kosdaq, StockFirm, 01);
+		_SetTradeItem(Kosdaq, InvestTrust, 03);
+		_SetTradeItem(Kosdaq, Bank, 04);
+		_SetTradeItem(Kosdaq, Insurance, 02);
+		_SetTradeItem(Kosdaq, InvestBank, 05);
+		_SetTradeItem(Kosdaq, Fund, 06);
+		_SetTradeItem(Kosdaq, Government, 11);
+		_SetTradeItem(Kosdaq, Etc, 07);
+		_SetTradeItem(Kosdaq, PrivateEquity, 00);
+	}
+	else if (strcmp(pPacket->szBlockName, NAME_t1601OutBlock3) == 0)
+	{
+		t1601OutBlock3* pOutBlock = (t1601OutBlock3*)pPacket->lpData;
+
+		m_pT1601Pend->Future = _InitTradersObj();
+		_SetTradeItem(Future, Individual, 08);
+		_SetTradeItem(Future, Foreigner, 17);
+		_SetTradeItem(Future, Institute, 18);
+		_SetTradeItem(Future, StockFirm, 01);
+		_SetTradeItem(Future, InvestTrust, 03);
+		_SetTradeItem(Future, Bank, 04);
+		_SetTradeItem(Future, Insurance, 02);
+		_SetTradeItem(Future, InvestBank, 05);
+		_SetTradeItem(Future, Fund, 06);
+		_SetTradeItem(Future, Government, 11);
+		_SetTradeItem(Future, Etc, 07);
+		_SetTradeItem(Future, PrivateEquity, 00);
+	}
+	else if (strcmp(pPacket->szBlockName, NAME_t1601OutBlock4) == 0)
+	{
+		t1601OutBlock4* pOutBlock = (t1601OutBlock4*)pPacket->lpData;
+
+		m_pT1601Pend->CallOpt = _InitTradersObj();
+		_SetTradeItem(CallOpt, Individual, 08);
+		_SetTradeItem(CallOpt, Foreigner, 17);
+		_SetTradeItem(CallOpt, Institute, 18);
+		_SetTradeItem(CallOpt, StockFirm, 01);
+		_SetTradeItem(CallOpt, InvestTrust, 03);
+		_SetTradeItem(CallOpt, Bank, 04);
+		_SetTradeItem(CallOpt, Insurance, 02);
+		_SetTradeItem(CallOpt, InvestBank, 05);
+		_SetTradeItem(CallOpt, Fund, 06);
+		_SetTradeItem(CallOpt, Government, 11);
+		_SetTradeItem(CallOpt, Etc, 07);
+		_SetTradeItem(CallOpt, PrivateEquity, 00);
+	}
+	else if (strcmp(pPacket->szBlockName, NAME_t1601OutBlock5) == 0)
+	{
+		t1601OutBlock5* pOutBlock = (t1601OutBlock5*)pPacket->lpData;
+
+		m_pT1601Pend->PutOpt = _InitTradersObj();
+		_SetTradeItem(PutOpt, Individual, 08);
+		_SetTradeItem(PutOpt, Foreigner, 17);
+		_SetTradeItem(PutOpt, Institute, 18);
+		_SetTradeItem(PutOpt, StockFirm, 01);
+		_SetTradeItem(PutOpt, InvestTrust, 03);
+		_SetTradeItem(PutOpt, Bank, 04);
+		_SetTradeItem(PutOpt, Insurance, 02);
+		_SetTradeItem(PutOpt, InvestBank, 05);
+		_SetTradeItem(PutOpt, Fund, 06);
+		_SetTradeItem(PutOpt, Government, 11);
+		_SetTradeItem(PutOpt, Etc, 07);
+		_SetTradeItem(PutOpt, PrivateEquity, 00);
+	}
+}
+
+void ApiWrapper::Finalize_T1601(RequestInfo* pRI)
+{
+	ASSERT(!System::Object::ReferenceEquals(m_pT1601Pend, nullptr));
+	m_pOwner->m_pListener->Xing_T1601(m_pT1601Pend);
+	m_pT1601Pend = nullptr;
+}
+
+
+void ApiWrapper::Process_T1633(RequestInfo* pRI, _RECV_PACKET* pPacket)
+{
+	if (strcmp(pPacket->szBlockName, NAME_t1633OutBlock) == 0)
+	{
+		t1633OutBlock* pBlock = (t1633OutBlock*)pPacket->lpData;
+
+		ASSERT(System::Object::ReferenceEquals(m_pT1633Pend, nullptr));
+		m_pT1633Pend = gcnew Xt1633();
+		m_pT1633Pend->ContinueDate = gcnew String(pBlock->date, 0, sizeof(pBlock->date));
+
+		int itemCnt = ParseInteger(pBlock->idx, sizeof(pBlock->idx));
+		m_pT1633Pend->Items = gcnew array<Xt1633Item^>(itemCnt);
+
+		TRACE("Process_T1633 date=%s, idx=%d\n", pBlock->date, itemCnt);
+	}
+	else if (strcmp(pPacket->szBlockName, NAME_t1633OutBlock1) == 0)
+	{
+		t1633OutBlock1* pBlock = (t1633OutBlock1*)pPacket->lpData;
+
+		int nCount = pPacket->nDataLength / sizeof(t1633OutBlock1);
+		TRACE("1633 count=%d, pendCnt=%d\n", nCount, m_pT1633Pend->Items->Length);
+		ASSERT(nCount == m_pT1633Pend->Items->Length);
+
+		for (int i = 0; i < nCount; i++)
+		{
+			Xt1633Item^ item = gcnew Xt1633Item();
+			m_pT1633Pend->Items[i] = item;
+
+			item->Date = GetString(pBlock[i].date, sizeof(pBlock->date));
+			item->Jisu = GetString(pBlock[i].jisu, sizeof(pBlock->jisu));
+			item->Sign = GetString(pBlock[i].sign, sizeof(pBlock->sign));
+			item->Change = GetString(pBlock[i].change, sizeof(pBlock->change));
+
+			item->TotalNetBuy = GetIntString(pBlock[i].tot3, sizeof(pBlock->tot3));
+			item->TotalBuy = GetIntString(pBlock[i].tot1, sizeof(pBlock->tot1));
+			item->TotalSell = GetIntString(pBlock[i].tot2, sizeof(pBlock->tot2));
+			item->ArbitrageNetBuy = GetIntString(pBlock[i].cha3, sizeof(pBlock->cha3));
+			item->ArbitrageBuy = GetIntString(pBlock[i].cha1, sizeof(pBlock->cha1));
+			item->ArbitrageSell = GetIntString(pBlock[i].cha2, sizeof(pBlock->cha2));
+			item->NoArbitrageNetBuy = GetIntString(pBlock[i].bcha3, sizeof(pBlock->bcha3));
+			item->NoArbitrageBuy = GetIntString(pBlock[i].bcha1, sizeof(pBlock->bcha1));
+			item->NorbitrageSell = GetIntString(pBlock[i].bcha2, sizeof(pBlock->bcha2));
+			item->Volume = GetIntString(pBlock[i].volume, sizeof(pBlock->volume));
+		}
+	}
+	else
+	{
+		TRACE("Unknown block name: %s\n", pPacket->szBlockName);
+	}
+}
+
+void ApiWrapper::Finalize_T133(RequestInfo* pRI)
+{
+	ASSERT(!System::Object::ReferenceEquals(m_pT1633Pend, nullptr));
+	m_pOwner->m_pListener->Xing_T1633(m_pT1633Pend);
+	m_pT1633Pend = nullptr;
+}
+
 
 void ApiWrapper::Process_T2101(RequestInfo* pRI, _RECV_PACKET* pPacket)
 {
@@ -234,10 +453,10 @@ void ApiWrapper::Process_ChartIndex(RequestInfo* pRI, _RECV_PACKET* pPacket)
 	|| KRtoWide(pWrap->outBlock1[0].close, sizeof(pWrap->outBlock1[0].close)).compare(L"종가")
 	|| KRtoWide(pWrap->outBlock1[0].volume, sizeof(pWrap->outBlock1[0].volume)).compare(L"거래량"))
 	{
-		TRACE(L"ChartIndex 기본 필드명 변경이 감지되었습니다.\n");
+		m_pOwner->OnErrorMessage(L"ChartIndex 기본 필드명 변경이 감지되었습니다.");
 		hasError = true;
 	}
-
+/*
 	if (pRI->indexType == ChartIndexType::PriceMoveAverage)
 	{
 		// 가격 이동 평균
@@ -248,11 +467,11 @@ void ApiWrapper::Process_ChartIndex(RequestInfo* pRI, _RECV_PACKET* pPacket)
 		|| KRtoWide(pWrap->outBlock1[0].value4, sizeof(pWrap->outBlock1[0].value4)).compare(L"60")
 		|| KRtoWide(pWrap->outBlock1[0].value5, sizeof(pWrap->outBlock1[0].value5)).compare(L"120"))
 		{
-			TRACE(L"ChartIndex 가격 이동평균 필드명 변경이 감지되었습니다.\n");
+			m_pOwner->OnErrorMessage(L"ChartIndex 가격 이동평균 필드명 변경이 감지되었습니다.");
 			hasError = true;
 		}
 	}
-	else if (pRI->indexType == ChartIndexType::EstrangementRatio)
+	else if (pRI->indexType == ChartIndexType::Disparity)
 	{
 		// 이격도
 		if (nMoreValueCount != 4
@@ -261,7 +480,7 @@ void ApiWrapper::Process_ChartIndex(RequestInfo* pRI, _RECV_PACKET* pPacket)
 		|| KRtoWide(pWrap->outBlock1[0].value3, sizeof(pWrap->outBlock1[0].value3)).compare(L"20")
 		|| KRtoWide(pWrap->outBlock1[0].value4, sizeof(pWrap->outBlock1[0].value4)).compare(L"60"))
 		{
-			TRACE(L"ChartIndex 이격도 필드명 변경이 감지되었습니다.\n");
+			m_pOwner->OnErrorMessage(L"ChartIndex 이격도 필드명 변경이 감지되었습니다.");
 			hasError = true;
 		}
 	}
@@ -271,7 +490,7 @@ void ApiWrapper::Process_ChartIndex(RequestInfo* pRI, _RECV_PACKET* pPacket)
 		if (nMoreValueCount != 1
 		|| KRtoWide(pWrap->outBlock1[0].value1, sizeof(pWrap->outBlock1[0].value1)).compare(L"ATR 14"))
 		{
-			TRACE(L"ChartIndex Average True Range 필드명 변경이 감지되었습니다.\n");
+			m_pOwner->OnErrorMessage(L"ChartIndex Average True Range 필드명 변경이 감지되었습니다.");
 			hasError = true;
 		}
 	}
@@ -283,7 +502,7 @@ void ApiWrapper::Process_ChartIndex(RequestInfo* pRI, _RECV_PACKET* pPacket)
 		|| KRtoWide(pWrap->outBlock1[0].value2, sizeof(pWrap->outBlock1[0].value2)).compare(L"MACD 12,26")
 		|| KRtoWide(pWrap->outBlock1[0].value3, sizeof(pWrap->outBlock1[0].value3)).compare(L"시그널 9"))
 		{
-			TRACE(L"ChartIndex MACD 필드명 변경이 감지되었습니다.\n");
+			m_pOwner->OnErrorMessage(L"ChartIndex MACD 필드명 변경이 감지되었습니다.");
 			hasError = true;
 		}
 	}
@@ -294,7 +513,7 @@ void ApiWrapper::Process_ChartIndex(RequestInfo* pRI, _RECV_PACKET* pPacket)
 		|| KRtoWide(pWrap->outBlock1[0].value1, sizeof(pWrap->outBlock1[0].value1)).compare(L"RSI 14")
 		|| KRtoWide(pWrap->outBlock1[0].value2, sizeof(pWrap->outBlock1[0].value2)).compare(L"시그널 9"))
 		{
-			TRACE(L"ChartIndex RSI 필드명 변경이 감지되었습니다.\n");
+			m_pOwner->OnErrorMessage(L"ChartIndex RSI 필드명 변경이 감지되었습니다.");
 			hasError = true;
 		}
 	}
@@ -305,7 +524,7 @@ void ApiWrapper::Process_ChartIndex(RequestInfo* pRI, _RECV_PACKET* pPacket)
 		|| KRtoWide(pWrap->outBlock1[0].value1, sizeof(pWrap->outBlock1[0].value1)).compare(L"OBV종가")
 		|| KRtoWide(pWrap->outBlock1[0].value2, sizeof(pWrap->outBlock1[0].value2)).compare(L"시그널 9"))
 		{
-			TRACE(L"ChartIndex OBV 필드명 변경이 감지되었습니다.\n");
+			m_pOwner->OnErrorMessage(L"ChartIndex OBV 필드명 변경이 감지되었습니다.");
 			hasError = true;
 		}
 	}
@@ -316,18 +535,18 @@ void ApiWrapper::Process_ChartIndex(RequestInfo* pRI, _RECV_PACKET* pPacket)
 		|| KRtoWide(pWrap->outBlock1[0].value1, sizeof(pWrap->outBlock1[0].value1)).compare(0, 9, L"Momentum ")
 		|| KRtoWide(pWrap->outBlock1[0].value2, sizeof(pWrap->outBlock1[0].value2)).compare(L"시그널 9"))
 		{
-			TRACE(L"ChartIndex Momentum 필드명 변경이 감지되었습니다.\n");
+			m_pOwner->OnErrorMessage(L"ChartIndex Momentum 필드명 변경이 감지되었습니다.");
 			hasError = true;
 		}
 	}
 	else if (pRI->indexType == ChartIndexType::SonarMomentum)
 	{
-		// Momentum
+		// Sonar Momentum
 		if (nMoreValueCount != 2
 		|| KRtoWide(pWrap->outBlock1[0].value1, sizeof(pWrap->outBlock1[0].value1)).compare(L"Sonar 종가")
 		|| KRtoWide(pWrap->outBlock1[0].value2, sizeof(pWrap->outBlock1[0].value2)).compare(0, 5, L"시그널 단"))
 		{
-			TRACE(L"ChartIndex Sonar Momentum 필드명 변경이 감지되었습니다.\n");
+			m_pOwner->OnErrorMessage(L"ChartIndex Sonar Momentum 필드명 변경이 감지되었습니다.");
 			hasError = true;
 		}
 	}
@@ -338,29 +557,32 @@ void ApiWrapper::Process_ChartIndex(RequestInfo* pRI, _RECV_PACKET* pPacket)
 		|| KRtoWide(pWrap->outBlock1[0].value1, sizeof(pWrap->outBlock1[0].value1)).compare(L"ROC 종가 1")
 		|| KRtoWide(pWrap->outBlock1[0].value2, sizeof(pWrap->outBlock1[0].value2)).compare(L"시그널 9"))
 		{
-			TRACE(L"ChartIndex Price ROC 필드명 변경이 감지되었습니다.\n");
+			m_pOwner->OnErrorMessage(L"ChartIndex Price ROC 필드명 변경이 감지되었습니다.");
 			hasError = true;
 		}
 	}
 	else if (pRI->indexType == ChartIndexType::VolumeROC)
 	{
-		// Price ROC
+		// Volume ROC
 		if (nMoreValueCount != 2
 		|| KRtoWide(pWrap->outBlock1[0].value1, sizeof(pWrap->outBlock1[0].value1)).compare(L"VolumeROC")
 		|| KRtoWide(pWrap->outBlock1[0].value2, sizeof(pWrap->outBlock1[0].value2)).compare(L"시그널 9"))
 		{
-			TRACE(L"ChartIndex Volume ROC 필드명 변경이 감지되었습니다.\n");
+			m_pOwner->OnErrorMessage(L"ChartIndex Volume ROC 필드명 변경이 감지되었습니다.");
 			hasError = true;
 		}
 	}
 	else
 	{
-		TRACE(L"Unknown ChartIndex index type: %d\n", (int)pRI->indexType);
+		WCHAR temp[1024];
+		StringCbPrintfW(temp, sizeof(temp), L"Unknown ChartIndex index type: %d", (int)pRI->indexType);
+		m_pOwner->OnErrorMessage(temp);
 		return;
 	}
-
+*/
 	XChartIndex^ chart = gcnew XChartIndex();
-	chart->Type = pRI->indexType;
+	chart->UserKey = pRI->nUserKey;
+	chart->UserParam = pRI->nUserParam;
 	chart->HasError = hasError;
 #ifdef _DEBUG
 	if (chart->HasError)
@@ -368,7 +590,9 @@ void ApiWrapper::Process_ChartIndex(RequestInfo* pRI, _RECV_PACKET* pPacket)
 #endif
 
 	chart->ValueNames = gcnew array<String^>(nMoreValueCount);
-	chart->ValueNames[0] = gcnew String(KRtoWide(pWrap->outBlock1[0].value1, sizeof(pWrap->outBlock1[0].value1)).c_str());
+
+	if (nMoreValueCount > 0)
+		chart->ValueNames[0] = gcnew String(KRtoWide(pWrap->outBlock1[0].value1, sizeof(pWrap->outBlock1[0].value1)).c_str());
 
 	if (nMoreValueCount > 1)
 		chart->ValueNames[1] = gcnew String(KRtoWide(pWrap->outBlock1[0].value2, sizeof(pWrap->outBlock1[0].value2)).c_str());
@@ -400,7 +624,9 @@ void ApiWrapper::Process_ChartIndex(RequestInfo* pRI, _RECV_PACKET* pPacket)
 		item->Volume = gcnew String(KRtoWide(pWrap->outBlock1[i].volume, sizeof(pWrap->outBlock1[i].volume)).c_str());
 
 		item->IndexValues = gcnew array<String^>(nMoreValueCount);
-		item->IndexValues[0] = gcnew String(KRtoWide(pWrap->outBlock1[i].value1, sizeof(pWrap->outBlock1[i].value1)).c_str());
+
+		if (nMoreValueCount > 0)
+			item->IndexValues[0] = gcnew String(KRtoWide(pWrap->outBlock1[i].value1, sizeof(pWrap->outBlock1[i].value1)).c_str());
 
 		if (nMoreValueCount > 1)
 			item->IndexValues[1] = gcnew String(KRtoWide(pWrap->outBlock1[i].value2, sizeof(pWrap->outBlock1[i].value2)).c_str());
@@ -425,78 +651,34 @@ void ApiWrapper::Process_ChartIndex(RequestInfo* pRI, _RECV_PACKET* pPacket)
 	m_pOwner->m_pListener->Xing_ChartIndex(chart);
 }
 
-void ApiWrapper::OnReceiveData(WPARAM wParam, LPARAM lParam)
+void ApiWrapper::OnReceiveRealDataChart(WPARAM wParam, LPARAM lParam)
 {
-	if (wParam == REQUEST_DATA)
-	{
-		RECV_PACKET* pRpData = (RECV_PACKET*)lParam;
-		auto itr = m_mapReqId2Info.find(pRpData->nRqID);
-		if (itr == m_mapReqId2Info.end())
-		{
-			TRACE("Request (ID=%d) not found in Info map\n", pRpData->nRqID);
-		}
-		else
-		{
-			RequestInfo* pRI = itr->second;
-			switch (pRI->nReqType)
-			{
-			case REQTYPE_T2101:
-				Process_T2101(pRI, pRpData);
-				break;
+	UINT nIndexID = (UINT)wParam;
+	LPRECV_REAL_PACKET pRcvData = (LPRECV_REAL_PACKET)lParam;
+	ChartIndexOutBlock1 *pBlock = (ChartIndexOutBlock1 *)(pRcvData->pszData);
 
-			case REQTYPE_CHARTINDEX:
-				Process_ChartIndex(pRI, pRpData);
-				break;
+	auto pos = KRtoWide(pBlock->pos, sizeof(pBlock->pos));
+	auto date = KRtoWide(pBlock->date, sizeof(pBlock->date));
+	auto time = KRtoWide(pBlock->time, sizeof(pBlock->time));
+	auto open = KRtoWide(pBlock->open, sizeof(pBlock->open));
+	auto high = KRtoWide(pBlock->high, sizeof(pBlock->high));
+	auto low = KRtoWide(pBlock->low, sizeof(pBlock->low));
+	auto close = KRtoWide(pBlock->close, sizeof(pBlock->close));
+	auto volume = KRtoWide(pBlock->volume, sizeof(pBlock->volume));
+	auto value1 = KRtoWide(pBlock->value1, sizeof(pBlock->value1));
+	auto value2 = KRtoWide(pBlock->value2, sizeof(pBlock->value2));
+	auto value3 = KRtoWide(pBlock->value3, sizeof(pBlock->value3));
+	auto value4 = KRtoWide(pBlock->value4, sizeof(pBlock->value4));
+	auto value5 = KRtoWide(pBlock->value5, sizeof(pBlock->value5));
 
-			default:
-				TRACE("Unknown RequestType %d (ReqID=%d)\n", pRI->nReqType, pRpData->nRqID);
-			}
-		}
-
-		if (pRpData->cCont[0] == '1')
-		{
-			TRACE("Next data available (cCont==1), but not programmed.\n");
-		}
-	}
-	else if (wParam == MESSAGE_DATA)
-	{
-		MSG_PACKET* pMsg = (MSG_PACKET*)lParam;
-
-		std::wstring msg = KRtoWide((char*)pMsg->lpszMessageData, pMsg->nMsgLength);
-		TRACE(_T("MESSAGE_DATA: %s\n"), msg.c_str());
-
-		s_xingApi.ReleaseMessageData(lParam);
-	}
-	else if (wParam == SYSTEM_ERROR_DATA)
-	{
-		MSG_PACKET* pMsg = (MSG_PACKET*)lParam;
-
-		std::wstring msg = KRtoWide((char*)pMsg->lpszMessageData, pMsg->nMsgLength);
-		TRACE(_T("SYSTEM_ERROR_DATA: %s\n"), msg.c_str());
-
-		s_xingApi.ReleaseMessageData(lParam);
-	}
-	else if (wParam == RELEASE_DATA)
-	{
-		TRACE(_T("Got RELEASE_DATA: %d"), (int)lParam);
-		s_xingApi.ReleaseRequestData((int)lParam);
-
-		auto itr = m_mapReqId2Info.find((int)lParam);
-		if (itr == m_mapReqId2Info.end())
-		{
-			TRACE(_T("Request (ID=%d) not found in Info map\n"), lParam);
-		}
-		else
-		{
-			delete itr->second;
-			m_mapReqId2Info.erase(itr);
-		}
-	}
-	else
-	{
-		TRACE(_T("Unknown XM Recv wParam=%d\n"), wParam);
-	}
+	//int nPos = _ttoi(pos.c_str());
+	TRACE(_T("RDC: pos=%s, date=%s, time=%s, OHLCV=%s,%s,%s,%s,%s\n"), pos.c_str(), date.c_str(), time.c_str(), open.c_str(), high.c_str(), low.c_str(), close.c_str(), volume.c_str());
+	TRACE(_T("\t\tvalues=%s,%s,%s,%s,%s\n"), value1.c_str(), value2.c_str(), value3.c_str(), value4.c_str(), value5.c_str());
 }
 
+void ApiWrapper::OnTimeoutData(WPARAM wParam, LPARAM lParam)
+{
+	TRACE("TODO: OnTimeoutData\n");
+}
 
 } // namespace XingSharp

@@ -16,10 +16,11 @@ LPSTR W2K(LPCWSTR pszSrc);
 
 std::wstring KRtoWide(const char* pKrStr, int len = -1);
 std::string KRtoAnsi(const char* pKrStr, int len = -1);
+System::String^ GetString(const char* pData, int nDataLen);
 
 double ParseFloat(const char* pData, int nDataLen, int nDotPos);
 System::String^ GetFloatString(const char* pData, int nDataLen, int nDotPos);
-
+System::String^ GetIntString(const char* pData, int nDataLen);
 int ParseInteger(const char* pData, int nDataLen);
 
 void CopyStringAndFillSpace(char* pDest, int lenDest, const char* pszSource);

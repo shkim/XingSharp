@@ -111,6 +111,7 @@
       <WarningLevel>Level3</WarningLevel>
       <PreprocessorDefinitions>WIN32;NDEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <PrecompiledHeader>Use</PrecompiledHeader>
+      <RuntimeLibrary>MultiThreadedDLL</RuntimeLibrary>
     </ClCompile>
     <Link>
       <AdditionalDependencies />
@@ -137,6 +138,12 @@
     <ClInclude Include="resource.h" />
     <ClInclude Include="Stdafx.h" />
     <ClInclude Include="tr\ChartIndex.h" />
+    <ClInclude Include="tr\FC0.h" />
+    <ClInclude Include="tr\IJ_.h" />
+    <ClInclude Include="tr\JIF.h" />
+    <ClInclude Include="tr\t1601.h" />
+    <ClInclude Include="tr\t1632.h" />
+    <ClInclude Include="tr\t1633.h" />
     <ClInclude Include="tr\t2101.h" />
     <ClInclude Include="util.h" />
     <ClInclude Include="XingSharp.h" />

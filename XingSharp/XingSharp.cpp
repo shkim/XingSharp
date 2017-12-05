@@ -5,6 +5,10 @@
 #include "XingSharp.h"
 #include "apiwrap.h"
 
+#include "util.h"
+#include "tr/FC0.h"
+#include "tr/JIF.h"
+
 namespace XingSharp {
 
 XingApi::XingApi(IXingApiListener^ pListener)
@@ -104,15 +108,79 @@ bool XingApi::Request_T2101(String^ shcode)
 	return ret;
 }
 
-bool XingApi::Request_ChartIndex(String^ shcode, String^ endDate, ChartMarketType marketType, ChartIndexType indexType, ChartPeriod period)
+bool XingApi::Request_T1601(bool forMoney)
 {
-	CHAR* pszShCode = (CHAR*)Marshal::StringToHGlobalAnsi(shcode).ToPointer();
-	CHAR* pszEndDate = (CHAR*)Marshal::StringToHGlobalAnsi(endDate).ToPointer();
-	bool ret = m_pApiWrapper->Request_ChartIndex(pszShCode, pszEndDate, marketType, indexType, period);
+	return m_pApiWrapper->Request_T1601(forMoney);
+}
+
+bool XingApi::Request_T1633(bool forMoney)
+{
+	char szToDate[32];
+	char szFromDate[32];
+
+	SYSTEMTIME tm;
+	GetLocalTime(&tm);
+
+	StringCchPrintfA(szToDate, 32, "%04d%02d%02d", tm.wYear, tm.wMonth, tm.wDay);
+
+	if (--tm.wMonth <= 0)
+	{
+		--tm.wYear;
+		tm.wMonth += 12;
+	}	
+
+	StringCchPrintfA(szFromDate, 32, "%04d%02d%02d", tm.wYear, tm.wMonth, tm.wDay);	
+
+	return m_pApiWrapper->Request_T1633(true, forMoney, szFromDate, szToDate);
+}
+
+bool XingApi::Request_ChartIndex(XChartIndexParam^ param)
+{
+	CHAR* pszShCode = (CHAR*)Marshal::StringToHGlobalAnsi(param->ShCode).ToPointer();
+	CHAR* pszEndDate = (CHAR*)Marshal::StringToHGlobalAnsi(param->EndDate).ToPointer();
+	CHAR* pszIndexName = (CHAR*)Marshal::StringToHGlobalAnsi(param->IndexName).ToPointer();
+
+	bool ret = m_pApiWrapper->Request_ChartIndex(pszShCode, pszEndDate, pszIndexName, param);
+
+	Marshal::FreeHGlobal(IntPtr(pszIndexName));
 	Marshal::FreeHGlobal(IntPtr(pszEndDate));
 	Marshal::FreeHGlobal(IntPtr(pszShCode));
 
 	return ret;
+}
+
+bool XingApi::Advise_FC0(String^ futcode)
+{	
+	FC0_InBlock data;
+	ZeroMemory(&data, sizeof(data));
+	
+	CHAR* pszFutureCode = (CHAR*)Marshal::StringToHGlobalAnsi(futcode).ToPointer();
+	CopyStringAndFillSpace(data.futcode, sizeof(data.futcode), pszFutureCode);
+	Marshal::FreeHGlobal(IntPtr(pszFutureCode));
+
+	return m_pApiWrapper->AdviseRealData(NAME_FC0, &data, sizeof(data));
+}
+
+bool XingApi::Unadvise_FC0(String^ futcode)
+{
+	FC0_InBlock data;
+	ZeroMemory(&data, sizeof(data));
+
+	CHAR* pszFutureCode = (CHAR*)Marshal::StringToHGlobalAnsi(futcode).ToPointer();
+	CopyStringAndFillSpace(data.futcode, sizeof(data.futcode), pszFutureCode);
+	Marshal::FreeHGlobal(IntPtr(pszFutureCode));
+
+	return m_pApiWrapper->UnadviseRealData(NAME_FC0, &data, sizeof(data));
+}
+
+bool XingApi::Advise_JIF()
+{
+	return m_pApiWrapper->AdviseRealData(NAME_JIF, "1", 1);
+}
+
+bool XingApi::Unadvise_JIF()
+{
+	return m_pApiWrapper->UnadviseRealData(NAME_JIF, "1", 1);
 }
 
 void XingApi::OnConnect(bool success, LPCTSTR pszMsg)
@@ -131,6 +199,12 @@ void XingApi::OnLoginFailed(LPCSTR pszCode, LPCTSTR pszMsg)
 	String^ errorMsg = gcnew String(pszMsg);
 
 	m_pListener->Xing_Login(false, errorCode, errorMsg);
+}
+
+void XingApi::OnErrorMessage(LPCWSTR pszMsg)
+{
+	String^ errorMsg = gcnew String(pszMsg);
+	m_pListener->Xing_ErrorMessage(errorMsg);
 }
 
 } // namespace XingSharp

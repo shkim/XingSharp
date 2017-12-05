@@ -93,6 +93,11 @@ std::string KRtoAnsi(const char* pKrStr, int len)
 	return ret;
 }
 
+System::String^ GetString(const char* pData, int nDataLen)
+{
+	return gcnew System::String(pData, 0, nDataLen);
+}
+
 static void _MakeDotNumberString(char *pBuff, const char* pData, int nDataLen, int nDotPos)
 {
 	ASSERT(nDataLen < 32 && nDotPos < nDataLen);
@@ -145,6 +150,39 @@ int ParseInteger(const char* pData, int nDataLen)
 	buff[nDataLen] = 0;
 
 	return atoi(buff);
+}
+
+System::String^ GetIntString(const char* pData, int nDataLen)
+{
+	char buff[32];
+	ASSERT(nDataLen < 32);
+
+	memcpy(buff, pData, nDataLen);
+	buff[nDataLen] = 0;
+
+	char* pStart = buff;
+	char* pEnd = &buff[nDataLen - 1];
+	while (*pEnd == ' ' && pStart < pEnd)
+	{
+		*pEnd-- = 0;
+	}
+
+	bool isMinus = (*pStart == '-');
+	if (isMinus)
+		pStart++;
+
+	while (*pStart == '0')
+	{
+		pStart++;
+	}
+
+	if (isMinus)
+	{
+		--pStart;
+		*pStart = '-';
+	}
+
+	return (gcnew System::String(pStart));
 }
 
 void CopyStringAndFillSpace(char* pDest, int lenDest, const char* pszSource)

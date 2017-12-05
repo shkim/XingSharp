@@ -42,6 +42,24 @@
     <ClInclude Include="tr\t2101.h">
       <Filter>TR</Filter>
     </ClInclude>
+    <ClInclude Include="tr\FC0.h">
+      <Filter>TR</Filter>
+    </ClInclude>
+    <ClInclude Include="tr\t1601.h">
+      <Filter>TR</Filter>
+    </ClInclude>
+    <ClInclude Include="tr\JIF.h">
+      <Filter>TR</Filter>
+    </ClInclude>
+    <ClInclude Include="tr\IJ_.h">
+      <Filter>TR</Filter>
+    </ClInclude>
+    <ClInclude Include="tr\t1633.h">
+      <Filter>TR</Filter>
+    </ClInclude>
+    <ClInclude Include="tr\t1632.h">
+      <Filter>TR</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="XingSharp.cpp">

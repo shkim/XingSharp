@@ -93,13 +93,33 @@ namespace XSHost
             if (success)
             {
                 LogPrint("로그인에 성공하였습니다.");
-                //m_xingApi.Request_T2101("101M6000");
-                m_xingApi.SetQueryRowCount(30);
-                m_xingApi.Request_ChartIndex("101M6000", "20170404", ChartMarketType.FutureOption, ChartIndexType.PriceMoveAverage, ChartPeriod.Daily);
+
+                //Req_ChartIndex();            
+                //m_xingApi.Unadvise_FC0("101M6000");                
+                //m_xingApi.Advise_JIF();
+                m_xingApi.Request_T1633(true);
             }
             else
             {
                 LogPrint("로그인 실패 [{0}] {1}", errorCode, errorMsg);
+            }
+        }
+
+        public void Xing_ErrorMessage(String errorMsg)
+        {
+            LogPrint("에러메세지: {0}", errorMsg);
+        }
+
+        public void Xing_T1601(Xt1601 data)
+        {
+            LogPrint("선물: 개인:{0},{1}, 외국인:{2},{3}", data.Kospi.Individual.Buy, data.Kospi.Individual.Sell, data.Kospi.Foreigner.Buy, data.Kospi.Foreigner.Sell);
+        }
+
+        public void Xing_T1633(Xt1633 data)
+        {
+            foreach (Xt1633Item item in data.Items)
+            {
+                LogPrint("{0}: 전체:{1}, 차익:{2}, 비차익:{3}, 지수:{4}, 거래량:{5}, Sign:{6}, 대비:{7}", item.Date, item.TotalNetBuy, item.ArbitrageNetBuy, item.NoArbitrageNetBuy, item.Jisu, item.Volume, item.Sign, item.Change);
             }
         }
 
@@ -112,12 +132,46 @@ namespace XSHost
 
         public void Xing_ChartIndex(XChartIndex chart)
         {
-            LogPrint("ChartIndex({0}): Rows={1}, MoreColumns={2}: {3}", chart.Type, chart.Items.Length, chart.ValueNames.Length, String.Join(", ", chart.ValueNames));
+            LogPrint("ChartIndex({0},{1}): NumRows={2}, MoreColumns={3}: {4}", chart.UserKey, chart.UserParam, chart.Items.Length, chart.ValueNames.Length, String.Join(", ", chart.ValueNames));
             foreach (XChartIndexItem item in chart.Items)
             {
                 LogPrint("{0},{1}: O={2},H={3},L={4},C={5},V={6} | {7}", item.Day, item.Time, item.Open, item.High, item.Low, item.Close, item.Volume, String.Join(", ", item.IndexValues));
             }
 
+        }
+
+        private void Req_ChartIndex()
+        {
+            XChartIndexParam param = new XChartIndexParam();
+            param.Market = ChartMarketType.FutureOption;
+            param.Period = ChartPeriodType.Monthly;
+            param.TicksOrMinutes = 6;
+            param.IndexName = ChartIndexName.PriceMoveAverage;
+            param.ShCode = "101M6000";
+            param.EndDate = "20170417";
+            param.QueryCount = 30;
+            param.FixGap = true;
+            param.AmendPrice = true;
+            param.RegisterReal = true;
+            param.UserKey = 111;
+            param.UserParam = 999;
+
+            m_xingApi.Request_ChartIndex(param);
+        }
+
+        private void menuRealFC0_Click(object sender, EventArgs e)
+        {
+            m_xingApi.Advise_FC0("101M6000");
+        }
+
+        private void menuT1601_Click(object sender, EventArgs e)
+        {
+            m_xingApi.Request_T1601(true);
+        }
+
+        private void menuT2101_Click(object sender, EventArgs e)
+        {
+            m_xingApi.Request_T2101("101M6000");
         }
     }
 }

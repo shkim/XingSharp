@@ -4,6 +4,7 @@
 
 #include "util.h"
 #include "IXingAPI.h"
+#include "tr/FC0.h"
 
 #pragma comment(lib, "user32.lib")
 
@@ -128,6 +129,23 @@ bool ApiWrapper::Login(LPCSTR pszUserId, LPCSTR pszUserPw, LPCSTR pszCertPw)
 	return true;
 }
 
+bool ApiWrapper::AdviseRealData(const char* trcode, void* pData, int nDataLen)
+{
+	BOOL ret = s_xingApi.AdviseRealData(m_hWnd, (LPCTSTR)trcode,
+		(LPCTSTR)pData, nDataLen);
+
+	TRACE("AdviseRealData(%s,%s): len=%d, ret=%d\n", trcode, (char*)pData, nDataLen, ret);
+	return (ret != FALSE);
+}
+
+bool ApiWrapper::UnadviseRealData(const char* trcode, void* pData, int nDataLen)
+{
+	BOOL ret = s_xingApi.UnadviseRealData(m_hWnd, (LPCTSTR)trcode,
+		(LPCTSTR)pData, nDataLen);
+
+	return (ret != FALSE);
+}
+
 RequestInfo* ApiWrapper::RegisterRequestInfo(int nReqId, int nReqType)
 {
 	if (nReqId < 0)
@@ -150,8 +168,113 @@ RequestInfo* ApiWrapper::RegisterRequestInfo(int nReqId, int nReqType)
 	return pRI;
 }
 
+void ApiWrapper::OnReceiveData(WPARAM wParam, LPARAM lParam)
+{
+	if (wParam == REQUEST_DATA)
+	{
+		RECV_PACKET* pRpData = (RECV_PACKET*)lParam;
+		auto itr = m_mapReqId2Info.find(pRpData->nRqID);
+		if (itr == m_mapReqId2Info.end())
+		{
+			TRACE("Request (ID=%d) not found in Info map\n", pRpData->nRqID);
+		}
+		else
+		{
+			RequestInfo* pRI = itr->second;
+			switch (pRI->nReqType)
+			{
+			case REQTYPE_CHARTINDEX:
+				Process_ChartIndex(pRI, pRpData);
+				break;
+
+			case REQTYPE_T1601:
+				Process_T1601(pRI, pRpData);
+				break;
+
+			case REQTYPE_T1633:
+				Process_T1633(pRI, pRpData);
+				break;
+
+			case REQTYPE_T2101:
+				Process_T2101(pRI, pRpData);
+				break;
+
+			default:
+				TRACE("Unknown RequestType %d (ReqID=%d)\n", pRI->nReqType, pRpData->nRqID);
+			}
+
+			if (pRpData->cCont[0] == '1')
+			{
+				TRACE("ReqType#%d Next data available (cCont==1), but not programmed.\n", pRI->nReqType);
+			}
+		}
+	}
+	else if (wParam == MESSAGE_DATA)
+	{
+		MSG_PACKET* pMsg = (MSG_PACKET*)lParam;
+
+		std::wstring msg = KRtoWide((char*)pMsg->lpszMessageData, pMsg->nMsgLength);
+		TRACE(_T("MESSAGE_DATA: %s\n"), msg.c_str());
+
+		s_xingApi.ReleaseMessageData(lParam);
+	}
+	else if (wParam == SYSTEM_ERROR_DATA)
+	{
+		MSG_PACKET* pMsg = (MSG_PACKET*)lParam;
+
+		std::wstring msg = KRtoWide((char*)pMsg->lpszMessageData, pMsg->nMsgLength);
+		TRACE(_T("SYSTEM_ERROR_DATA: %s\n"), msg.c_str());
+		m_pOwner->OnErrorMessage(msg.c_str());
+
+		s_xingApi.ReleaseMessageData(lParam);
+	}
+	else if (wParam == RELEASE_DATA)
+	{
+		TRACE(_T("Got RELEASE_DATA: %d\n"), (int)lParam);
+		s_xingApi.ReleaseRequestData((int)lParam);
+
+		auto itr = m_mapReqId2Info.find((int)lParam);
+		if (itr == m_mapReqId2Info.end())
+		{
+			TRACE(_T("Request (ID=%d) not found in Info map\n"), lParam);
+		}
+		else
+		{
+			RequestInfo* pRI = itr->second;
+			switch (pRI->nReqType)
+			{
+			case REQTYPE_T1601:
+				Finalize_T1601(pRI);
+				break;
+			case REQTYPE_T1633:
+				Finalize_T133(pRI);
+				break;
+			}
+
+			delete itr->second;
+			m_mapReqId2Info.erase(itr);
+		}
+	}
+	else
+	{
+		TRACE(_T("Unknown XM Recv wParam=%d\n"), wParam);
+	}
+}
+
+void ApiWrapper::OnReceiveRealData(WPARAM wParam, LPARAM lParam)
+{
+	RECV_REAL_PACKET* pRealPacket = (RECV_REAL_PACKET*)lParam;
+	TRACE("TODO: XM_RECEIVE_REAL_DATA: %s\n", pRealPacket->szTrCode);
+
+	if (strcmp(pRealPacket->szTrCode, NAME_FC0) == 0)
+	{
+		Process_FC0((FC0_OutBlock*)pRealPacket->pszData);
+	}
+}
+
 void ApiWrapper::HandleMessage(UINT xmMessage, WPARAM wParam, LPARAM lParam)
 {
+	TRACE("HandleMsg(%d)\n", xmMessage);
 	switch (xmMessage)
 	{
 	case XM_DISCONNECT:
@@ -169,6 +292,18 @@ void ApiWrapper::HandleMessage(UINT xmMessage, WPARAM wParam, LPARAM lParam)
 
 	case XM_RECEIVE_DATA:
 		OnReceiveData(wParam, lParam);
+		break;
+
+	case XM_RECEIVE_REAL_DATA:
+		OnReceiveRealData(wParam, lParam);
+		break;
+
+	case XM_RECEIVE_REAL_DATA_CHART:
+		OnReceiveRealDataChart(wParam, lParam);
+		break;
+
+	case XM_TIMEOUT_DATA:
+		OnTimeoutData(wParam, lParam);
 		break;
 
 	default:
