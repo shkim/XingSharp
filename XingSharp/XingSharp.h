@@ -14,7 +14,7 @@ namespace XingSharp
 		Daily = 2,		// 일
 		Weekly = 3,		// 주
 		Monthly = 4,	// 월
-		Yearly = 5,		// 년
+		//Yearly = 5,		// 년
 	};
 
 	public enum class ChartMarketType : char
@@ -23,21 +23,7 @@ namespace XingSharp
 		Industry = 2,		// 업종
 		FutureOption = 5,	// 선물옵션
 	};
-/*
-	public enum class ChartIndexType : char
-	{
-		PriceMoveAverage,		// 가격이동평균
-		Disparity,		// 이격도
-		AverageTrueRange,
-		MACD,
-		RSI,
-		OBV,
-		Momentum,
-		SonarMomentum,
-		PriceROC,
-		VolumeROC
-	};
-*/
+
 	public ref class ChartIndexName
 	{
 	public:
@@ -160,11 +146,45 @@ namespace XingSharp
 		array<Xt1633Item^>^ Items;
 	};
 
+	public ref class XtFC0
+	{
+	public:
+		String^ CheTime;	// 체결시간
+		SignAgainstYesterday Sign; // 전일대비구분
+		String^ Change;		// 전일대비
+		String^ DRate;		// 등락율
+		String^ Price;		// 현재가
+		String^ Open;		// 시가
+		String^ High;		// 고가
+		String^ Low;		// 저가
+		String^ CGubun;		// 체결구분
+		String^ CVolume;	// 체결량
+		String^ Volume;		// 누적거래량
+		String^ Value;		// 누적거래대금
+		String^ MdVolume;	// 매도누적체결량
+		String^ MdCheCnt;	// 매도누적체결건수
+		String^ MsVolume;	// 매수누적체결량
+		String^ MsCheCnt;	// 매수누적체결건수
+		String^ CPower;		// 체결강도
+		String^ OfferHo1;	// 매도호가1
+		String^ BidHo1;		// 매수호가1
+		String^ OpenYak;	// 미결제약정수량
+		String^ K200Jisu;	// KOSPI200지수
+		String^ TheoryPrice;// 이론가
+		String^ Kasis;		// 괴리율
+		String^ Sbasis;		// 시장BASIS
+		String^ Ibasis;		// 이론BASIS
+		String^ OpenYakCha;	// 미결제약정증감
+		String^ JGubun;		// 장운영정보
+		String^ JnilVolume;	// 전일동시간대거래량
+		String^ FutCode;	// 단축코드
+	};
+
 	// Output of ChartIndex
 	public ref class XChartIndex
 	{
 	public:
-		int UserKey;
+		String^ UserKey;
 		int UserParam;
 
 		array<String^>^ ValueNames;	// names of Items.IndexValues
@@ -188,7 +208,7 @@ namespace XingSharp
 		bool RegisterReal;
 
 		// two user variables for any purpose
-		int UserKey;
+		String^ UserKey;
 		int UserParam;
 	};
 
@@ -198,6 +218,7 @@ namespace XingSharp
 		void Xing_Login(bool success, String^ errorCode, String^ errorMsg);
 		void Xing_ErrorMessage(String^ errorMsg);
 
+		void Xing_FC0(XtFC0^ fc0);
 		void Xing_T2101(Xt2101^ t2101);
 		void Xing_T1601(Xt1601^ t1601);
 		void Xing_T1633(Xt1633^ t1633);		

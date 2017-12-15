@@ -121,9 +121,6 @@ bool ApiWrapper::Request_ChartIndex(const char* shcode, const char* day8code, co
 	case ChartPeriodType::Monthly:
 		inblock.period[0] = '4';
 		break;
-	case ChartPeriodType::Yearly:
-		inblock.period[0] = '5';
-		break;
 
 	default:
 		TRACE("Invalid chart period type: %d\n", (int)otherParam->Period);
@@ -155,7 +152,7 @@ bool ApiWrapper::Request_ChartIndex(const char* shcode, const char* day8code, co
 	RequestInfo* pRI = RegisterRequestInfo(nReqId, REQTYPE_CHARTINDEX);
 	if (pRI)
 	{
-		pRI->nUserKey = otherParam->UserKey;
+		pRI->strUserKey = MStringToWString(otherParam->UserKey);
 		pRI->nUserParam = otherParam->UserParam;
 		return true;
 	}
@@ -200,12 +197,41 @@ SignAgainstYesterday ParseSignAgainstYesterday(char ch)
 }
 
 // KOSPI200 선물 체결
-void ApiWrapper::Process_FC0(FC0_OutBlock* pOutBlock)
+void ApiWrapper::Process_FC0(FC0_OutBlock* pBlock)
 {
-//	m_ctrlOutBlock.SetItemText(nRow++, 1, GetDispData(pOutBlock->chetime, sizeof(pOutBlock->chetime), DATA_TYPE_STRING));    // 체결시간          
-//	m_ctrlOutBlock.SetItemText(nRow++, 1, GetDispData(pOutBlock->sign, sizeof(pOutBlock->sign), DATA_TYPE_STRING));    // 전일대비구분      
-																													   // see DlG_FC0.cpp
+	XtFC0^ ret = gcnew XtFC0();
 
+	ret->CheTime = GetString(pBlock->chetime, sizeof(pBlock->chetime));
+	ret->Sign = ParseSignAgainstYesterday(pBlock->sign[0]);
+	ret->Change = GetFloatString(pBlock->change, 6, 2);
+	ret->DRate = GetFloatString(pBlock->drate, 6, 2);
+	ret->Price = GetFloatString(pBlock->price, 6, 2);
+	ret->Open = GetFloatString(pBlock->open, 6, 2);
+	ret->High = GetFloatString(pBlock->high, 6, 2);
+	ret->Low = GetFloatString(pBlock->low, 6, 2);
+	ret->CGubun = GetString(pBlock->cgubun, sizeof(pBlock->cgubun));
+	ret->CVolume = GetIntString(pBlock->cvolume, sizeof(pBlock->cvolume));
+	ret->Volume = GetIntString(pBlock->volume, sizeof(pBlock->volume));
+	ret->Value = GetIntString(pBlock->value, sizeof(pBlock->value));
+	ret->MdVolume = GetIntString(pBlock->mdvolume, sizeof(pBlock->mdvolume));
+	ret->MdCheCnt = GetIntString(pBlock->mdchecnt, sizeof(pBlock->mdchecnt));
+	ret->MsVolume = GetIntString(pBlock->msvolume, sizeof(pBlock->msvolume));
+	ret->MsCheCnt = GetIntString(pBlock->mschecnt, sizeof(pBlock->mschecnt));
+	ret->CPower = GetFloatString(pBlock->cpower, 9, 2);
+	ret->OfferHo1 = GetFloatString(pBlock->offerho1, 6, 2);
+	ret->BidHo1 = GetFloatString(pBlock->bidho1, 6, 2);
+	ret->OpenYak = GetIntString(pBlock->openyak, sizeof(pBlock->openyak));
+	ret->K200Jisu = GetFloatString(pBlock->k200jisu, 6, 2);
+	ret->TheoryPrice = GetFloatString(pBlock->theoryprice, 6, 2);
+	ret->Kasis = GetFloatString(pBlock->kasis, 6, 2);
+	ret->Sbasis = GetFloatString(pBlock->sbasis, 6, 2);
+	ret->Ibasis = GetFloatString(pBlock->ibasis, 6, 2);
+	ret->OpenYakCha = GetIntString(pBlock->openyakcha, sizeof(pBlock->openyakcha));
+	ret->JGubun = GetString(pBlock->jgubun, sizeof(pBlock->jgubun));
+	ret->JnilVolume = GetIntString(pBlock->jnilvolume, sizeof(pBlock->jnilvolume));
+	ret->FutCode = GetString(pBlock->futcode, sizeof(pBlock->futcode));
+	
+	m_pOwner->m_pListener->Xing_FC0(ret);
 }
 
 static XTraders^ _InitTradersObj()
@@ -581,7 +607,7 @@ void ApiWrapper::Process_ChartIndex(RequestInfo* pRI, _RECV_PACKET* pPacket)
 	}
 */
 	XChartIndex^ chart = gcnew XChartIndex();
-	chart->UserKey = pRI->nUserKey;
+	chart->UserKey = WStringToMString(pRI->strUserKey);
 	chart->UserParam = pRI->nUserParam;
 	chart->HasError = hasError;
 #ifdef _DEBUG

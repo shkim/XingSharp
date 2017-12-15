@@ -23,7 +23,7 @@ namespace XingSharp
 		int nReqType;
 		int nDataReceived;
 
-		int nUserKey;
+		std::wstring strUserKey;
 		int nUserParam;
 	};
 
