@@ -199,6 +199,10 @@ void ApiWrapper::OnReceiveData(WPARAM wParam, LPARAM lParam)
 				Process_T2101(pRI, pRpData);
 				break;
 
+			case REQTYPE_T9945:
+				Process_T9945(pRI, pRpData);
+				break;
+
 			default:
 				TRACE("Unknown RequestType %d (ReqID=%d)\n", pRI->nReqType, pRpData->nRqID);
 			}
@@ -264,17 +268,20 @@ void ApiWrapper::OnReceiveData(WPARAM wParam, LPARAM lParam)
 void ApiWrapper::OnReceiveRealData(WPARAM wParam, LPARAM lParam)
 {
 	RECV_REAL_PACKET* pRealPacket = (RECV_REAL_PACKET*)lParam;
-	TRACE("TODO: XM_RECEIVE_REAL_DATA: %s\n", pRealPacket->szTrCode);
 
 	if (strcmp(pRealPacket->szTrCode, NAME_FC0) == 0)
 	{
 		Process_FC0((FC0_OutBlock*)pRealPacket->pszData);
 	}
+	else
+	{
+		TRACE("TODO: XM_RECEIVE_REAL_DATA: %s\n", pRealPacket->szTrCode);
+	}
 }
 
 void ApiWrapper::HandleMessage(UINT xmMessage, WPARAM wParam, LPARAM lParam)
 {
-	TRACE("HandleMsg(%d)\n", xmMessage);
+	//TRACE("HandleMsg(%d)\n", xmMessage);
 	switch (xmMessage)
 	{
 	case XM_DISCONNECT:

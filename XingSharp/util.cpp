@@ -1,6 +1,9 @@
 #include "stdafx.h"
 #include "util.h"
 
+using namespace System;
+using namespace System::Runtime::InteropServices;
+
 #define CP_949		949
 
 #define MAX_A2W_LENGTH		1024
@@ -98,6 +101,29 @@ System::String^ GetString(const char* pData, int nDataLen)
 	return gcnew System::String(pData, 0, nDataLen);
 }
 
+std::wstring MStringToWString(System::String^ str)
+{
+	std::wstring ret;
+
+	if (!System::String::IsNullOrEmpty(str))
+	{
+		WCHAR* pszSrc = (WCHAR*)Marshal::StringToHGlobalUni(str).ToPointer();
+		ret = pszSrc;
+		Marshal::FreeHGlobal(IntPtr(pszSrc));
+	}
+
+	return ret;
+}
+
+System::String^ WStringToMString(const std::wstring& str)
+{
+	if (str.length() == 0)
+		return nullptr;
+
+	return gcnew System::String(str.c_str(), 0, str.length());
+}
+
+
 static void _MakeDotNumberString(char *pBuff, const char* pData, int nDataLen, int nDotPos)
 {
 	ASSERT(nDataLen < 32 && nDotPos < nDataLen);
@@ -190,8 +216,9 @@ void CopyStringAndFillSpace(char* pDest, int lenDest, const char* pszSource)
 	int lenSrc = strlen(pszSource);
 	int nCopy = (lenDest < lenSrc) ? lenDest : lenSrc;
 	memcpy(pDest, pszSource, nCopy);
-	for (int n = nCopy; nCopy < lenDest; n++)
+	
+	while (nCopy < lenDest)
 	{
-		pDest[n] = ' ';
+		pDest[nCopy++] = ' ';
 	}
 }

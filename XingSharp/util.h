@@ -18,6 +18,9 @@ std::wstring KRtoWide(const char* pKrStr, int len = -1);
 std::string KRtoAnsi(const char* pKrStr, int len = -1);
 System::String^ GetString(const char* pData, int nDataLen);
 
+std::wstring MStringToWString(System::String^ str);
+System::String^ WStringToMString(const std::wstring& str);
+
 double ParseFloat(const char* pData, int nDataLen, int nDotPos);
 System::String^ GetFloatString(const char* pData, int nDataLen, int nDotPos);
 System::String^ GetIntString(const char* pData, int nDataLen);
