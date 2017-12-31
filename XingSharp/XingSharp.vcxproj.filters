@@ -60,6 +60,9 @@
     <ClInclude Include="tr\t1632.h">
       <Filter>TR</Filter>
     </ClInclude>
+    <ClInclude Include="tr\t9945.h">
+      <Filter>TR</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="XingSharp.cpp">

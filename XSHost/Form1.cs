@@ -190,17 +190,26 @@ namespace XSHost
 
         }
 
-        public void Xing_ChartIndex(XChartIndex chart)
-        {
-            LogPrint("ChartIndex({0},{1}): NumRows={2}, MoreColumns={3}: {4}", chart.UserKey, chart.UserParam, chart.Items.Length, chart.ValueNames.Length, String.Join(", ", chart.ValueNames));
-            foreach (XChartIndexItem item in chart.Items)
-            {
-                LogPrint("{0},{1}: O={2},H={3},L={4},C={5},V={6} | {7}", item.Day, item.Time, item.Open, item.High, item.Low, item.Close, item.Volume, String.Join(", ", item.IndexValues));
-            }
+		public void Xing_T9945(Xt9945[] data)
+		{
+			foreach (var item in data)
+			{
+				LogPrint("종목: {0},{1},{2},{3},{4}", item.Gubun, item.HangulName, item.ShCode, item.ExpCode, item.IsETF);
+			}
+			LogPrint("[T9945] {0} 항목을 수신하였습니다.", data.Length);
+		}
 
-        }
+		public void Xing_ChartIndex(XChartIndex chart)
+		{
+			LogPrint("ChartIndex({0},{1}): NumRows={2}, MoreColumns={3}: {4}", chart.UserKey, chart.UserParam, chart.Items.Length, chart.ValueNames.Length, String.Join(", ", chart.ValueNames));
+			foreach (XChartIndexItem item in chart.Items)
+			{
+				LogPrint("{0},{1}: O={2},H={3},L={4},C={5},V={6} | {7}", item.Day, item.Time, item.Open, item.High, item.Low, item.Close, item.Volume, String.Join(", ", item.IndexValues));
+			}
 
-        private void Req_ChartIndex()
+		}
+
+		private void Req_ChartIndex()
         {
             XChartIndexParam param = new XChartIndexParam();
             param.Market = ChartMarketType.FutureOption;
@@ -272,5 +281,10 @@ namespace XSHost
 			m_xingApi.Request_T2101(m_futcode);
 		}
 
-	}
+        private void menuT9945_Click(object sender, EventArgs e)
+        {
+            LogPrint("종목 마스터(코스피) 조회 요청을 합니다.");
+            m_xingApi.Request_T9945(MarketGubun.Kospi);
+        }
+    }
 }

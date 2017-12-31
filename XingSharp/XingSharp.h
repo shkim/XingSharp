@@ -24,6 +24,12 @@ namespace XingSharp
 		FutureOption = 5,	// 선물옵션
 	};
 
+	public enum class MarketGubun : char
+	{
+		Kospi = 1,
+		Kosdaq = 2,
+	};
+
 	public ref class ChartIndexName
 	{
 	public:
@@ -146,6 +152,17 @@ namespace XingSharp
 		array<Xt1633Item^>^ Items;
 	};
 
+	// 종목 정보
+	public ref class Xt9945
+	{
+	public:
+		MarketGubun Gubun;
+		String^ HangulName;	// 한글명
+		String^ ShCode;	// 단축코드
+		String^ ExpCode; // 확장코드
+		bool IsETF;
+	};
+
 	public ref class XtFC0
 	{
 	public:
@@ -221,7 +238,8 @@ namespace XingSharp
 		void Xing_FC0(XtFC0^ fc0);
 		void Xing_T2101(Xt2101^ t2101);
 		void Xing_T1601(Xt1601^ t1601);
-		void Xing_T1633(Xt1633^ t1633);		
+		void Xing_T1633(Xt1633^ t1633);
+		void Xing_T9945(array<Xt9945^>^ t9945);
 		void Xing_ChartIndex(XChartIndex^ chart);
 	};
 
@@ -249,6 +267,7 @@ namespace XingSharp
 		bool Request_T2101(String^ shcode);	// 현재가 조회
 		bool Request_T1601(bool forMoney);	// 투자자별 종합 (true=금액, false=수량)
 		bool Request_T1633(bool forMoney);	// 기간별 프로그램 매매추이 (거래소 금일까지 한달치 일별만 조회)
+		bool Request_T9945(MarketGubun gubun);	// 종목 마스터 조회
 		bool Request_ChartIndex(XChartIndexParam^ param);
 
 		void OnConnect(bool success, LPCTSTR pszMsg);

@@ -8,6 +8,7 @@
 #include "tr/t1601.h"
 #include "tr/t1633.h"
 #include "tr/t2101.h"
+#include "tr/t9945.h"
 #include "tr/ChartIndex.h"
 
 namespace XingSharp {
@@ -37,8 +38,7 @@ bool ApiWrapper::Request_T2101(const char* shcode)
 	memset(&inBlock, ' ', sizeof(inBlock));
 	CopyStringAndFillSpace(inBlock.focode, sizeof(inBlock.focode), shcode);
 
-	int nReqId = s_xingApi.Request(m_hWnd, (LPCTSTR)NAME_t2101,
-		&inBlock, sizeof(inBlock));
+	int nReqId = s_xingApi.Request(m_hWnd, (LPCTSTR)NAME_t2101, &inBlock, sizeof(inBlock));
 
 	return (NULL != RegisterRequestInfo(nReqId, REQTYPE_T2101));
 }
@@ -54,8 +54,7 @@ bool ApiWrapper::Request_T1601(bool forMoney)
 	inBlock.gubun3[0] = '1';	// 1:백만원, 2:억원
 	inBlock.gubun4[0] = ch;
 
-	int nReqId = s_xingApi.Request(m_hWnd, (LPCTSTR)NAME_t1601,
-		&inBlock, sizeof(inBlock));
+	int nReqId = s_xingApi.Request(m_hWnd, (LPCTSTR)NAME_t1601, &inBlock, sizeof(inBlock));
 
 	return (NULL != RegisterRequestInfo(nReqId, REQTYPE_T1601));
 }
@@ -76,10 +75,29 @@ bool ApiWrapper::Request_T1633(bool forKospi, bool forMoney, const char* pszFrom
 
 	// TODO: 연속조회셋팅
 	TRACE("t1633: %s~%s\n", pszFromDate, pszToDate);
-	int nReqId = s_xingApi.Request(m_hWnd, (LPCTSTR)NAME_t1633,
-		&inBlock, sizeof(inBlock));
+	int nReqId = s_xingApi.Request(m_hWnd, (LPCTSTR)NAME_t1633, &inBlock, sizeof(inBlock));
 
 	return (NULL != RegisterRequestInfo(nReqId, REQTYPE_T1633));
+}
+
+bool ApiWrapper::Request_T9945(int gubun)
+{
+	t9945InBlock inBlock;
+	memset(&inBlock, ' ', sizeof(inBlock));
+
+	inBlock.gubun[0] = '0' + gubun;
+
+	TRACE("t9945: %d\n", gubun);
+	int nReqId = s_xingApi.Request(m_hWnd, (LPCTSTR)NAME_t9945, &inBlock, sizeof(inBlock));
+
+	auto pRI = RegisterRequestInfo(nReqId, REQTYPE_T9945);
+	if (pRI)
+	{
+		pRI->nUserParam = gubun;
+		return true;
+	}
+
+	return false;
 }
 
 bool ApiWrapper::Request_ChartIndex(const char* shcode, const char* day8code, const char* indexName, XChartIndexParam^ otherParam)
@@ -453,6 +471,43 @@ void ApiWrapper::Process_T2101(RequestInfo* pRI, _RECV_PACKET* pPacket)
 	ret->KospiJisu = GetFloatString(pBlock->kospijisu, 6, 2);
 
 	m_pOwner->m_pListener->Xing_T2101(ret);
+}
+
+void ApiWrapper::Process_T9945(RequestInfo* pRI, _RECV_PACKET* pPacket)
+{
+	MarketGubun gubun;
+	switch (pRI->nUserParam)
+	{
+	case 1:
+		gubun = MarketGubun::Kospi;
+		break;
+	case 2:
+		gubun = MarketGubun::Kosdaq;
+		break;
+	default:
+		ASSERT(!"T9945: Invalid market gubun");
+	}
+
+	if (strcmp(pPacket->szBlockName, NAME_t9945OutBlock) == 0)
+	{
+		t9945OutBlock* pBlock = (t9945OutBlock*)pPacket->lpData;
+
+		int nCount = pPacket->nDataLength / sizeof(t9945OutBlock);
+		array<Xt9945^>^ ret = gcnew array<Xt9945^>(nCount);
+		for (int i = 0; i < nCount; i++, pBlock++)
+		{
+			Xt9945^ item = gcnew Xt9945();
+			item->HangulName = gcnew String(KRtoWide(pBlock->hname, sizeof(pBlock->hname)).c_str());
+			item->ShCode = gcnew String(pBlock->shcode, 0, sizeof(pBlock->shcode));
+			item->ExpCode = gcnew String(pBlock->expcode, 0, sizeof(pBlock->expcode));
+			item->IsETF = pBlock->etfchk[0] == '1';
+			item->Gubun = gubun;
+
+			ret[i] = item;
+		}
+
+		m_pOwner->m_pListener->Xing_T9945(ret);
+	}
 }
 
 struct ChartIndexOutWrap

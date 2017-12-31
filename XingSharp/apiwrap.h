@@ -15,6 +15,7 @@ namespace XingSharp
 		REQTYPE_T1601,
 		REQTYPE_T1633,
 		REQTYPE_T2101,
+		REQTYPE_T9945,
 		_REQTYPE_TODO
 	};
 
@@ -47,6 +48,7 @@ namespace XingSharp
 		bool Request_T2101(const char* shcode);
 		bool Request_T1601(bool forMoney);
 		bool Request_T1633(bool forKospi, bool forMoney, const char* fromDate, const char* toDate);
+		bool Request_T9945(int gubun);
 		bool Request_ChartIndex(const char* shcode, const char* day8code, const char* indexName, XChartIndexParam^ otherParam);
 
 		inline bool IsValid() const { return (m_hWnd != NULL); }
@@ -70,6 +72,7 @@ namespace XingSharp
 		void Finalize_T133(RequestInfo* pRI); 
 		
 		void Process_T2101(RequestInfo* pRI, _RECV_PACKET* pPacket);
+		void Process_T9945(RequestInfo* pRI, _RECV_PACKET* pPacket);
 		void Process_ChartIndex(RequestInfo* pRI, _RECV_PACKET* pPacket);
 
 		static LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam);

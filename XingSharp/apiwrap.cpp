@@ -199,6 +199,10 @@ void ApiWrapper::OnReceiveData(WPARAM wParam, LPARAM lParam)
 				Process_T2101(pRI, pRpData);
 				break;
 
+			case REQTYPE_T9945:
+				Process_T9945(pRI, pRpData);
+				break;
+
 			default:
 				TRACE("Unknown RequestType %d (ReqID=%d)\n", pRI->nReqType, pRpData->nRqID);
 			}

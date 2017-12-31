@@ -134,6 +134,11 @@ bool XingApi::Request_T1633(bool forMoney)
 	return m_pApiWrapper->Request_T1633(true, forMoney, szFromDate, szToDate);
 }
 
+bool XingApi::Request_T9945(MarketGubun gubun)
+{
+	return m_pApiWrapper->Request_T9945(System::Convert::ToInt32(gubun));
+}
+
 bool XingApi::Request_ChartIndex(XChartIndexParam^ param)
 {
 	CHAR* pszShCode = (CHAR*)Marshal::StringToHGlobalAnsi(param->ShCode).ToPointer();
